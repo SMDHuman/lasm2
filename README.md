@@ -1,3 +1,5 @@
+<img src="res/LOTP Assembler 2 Logo.png" width="256" alt="LOTP Assembler 2">
+
 # LOTP Assembler 2
 This is a successor to a custom assembler of mine called LASM. This new version aims to change some implementations of the main codebase and tries to make adding new Instruction Sets much more pleasant. LASM2 is backwards compatible and will have some new features to make the usage of this assembler much more intuitive. 
 
