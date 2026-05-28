@@ -1,0 +1,14 @@
+zp{
+  x[0]: y[2]: z[4]:
+  stack[0x100]{ start: end[start+0x255]: }
+}
+
+// Determined labels - fixed values
+x[0]: y[x+1]: z[y+2]:
+
+// Can reference labels before definition
+start[0x8000 :: start + 0x200]:
+  x; y; z; zp.x; zp.y; zp.z; zp.stack.start; zp.stack.end
+end[0xff00 + loop]: 
+  0xfff
+

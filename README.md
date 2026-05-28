@@ -1,7 +1,7 @@
 <img src="res/LOTP Assembler 2 Logo.png" width="256" alt="LOTP Assembler 2">
 
 # LOTP Assembler 2
-This is a successor to a custom assembler of mine called LASM. This new version aims to change some implementations of the main codebase and tries to make adding new Instruction Sets much more pleasant. LASM2 is backwards compatible and will have some new features to make the usage of this assembler much more intuitive. 
+This is a successor to a custom assembler of mine called LASM. This new version aims to change some implementations of the main codebase and tries to make adding new Instruction Sets much more pleasant. LASM2 is not backwards compatible. Some new features makes the usage of this version of assembler much more intuitive than the previous version. 
 
 ### What has special than other assemblers?
 It has all the necessary macros that we love from the C language, namespaces for branch labels, and support for numbers of arbitrary (effectively unlimited) size. All of these are to make this language fun to use and to try new methods of writing assembly.
@@ -65,12 +65,13 @@ Everything that doesn't belong to instruction words will be parsed as an express
 
 // Manipulate values with special operations
 "text with words"[2]  // Isolates character 'x' by index
-0xfff .[2]            // Ensure value takes 2 bytes of space
-3 + 2.[32] - 1        // This is 4 but occupies 32 bytes
+"Hello Code"[3:5]     // Isolates character 'lo' by range of indexes
+0xfff #4              // Ensure value takes 4 bytes of space
+3 + (2#32) - 1        // This is equal to '4' but occupies 32 bytes. Size of bytes inherits though evaluation
 ```
 
 ### Labels, Namespaces & Memory Management
-**Branch Labels** have two properties: determined value and evaluation timing. You can call future branches from previous lines, and undetermined labels are evaluated when the assembler parses them.
+**Branch Labels** have two properties: constant and undetermined. You can call future branches from previous lines, and undetermined labels are evaluated when the assembler parses them.
 ```
 // Determined labels - fixed values
 x[0]: y[x+1]: z[y+2]:
@@ -86,12 +87,12 @@ end[0xff00 + loop]: hlt
 
 **Namespaces & Scopes** isolate labels using curly braces '{}'. Code can reach upper levels but not lower ones. A named scope creates a namespace to make it accessible afterwards.
 ```
-zeropage{
+zp{
   x[0]: y[2]: z[4]:
   stack[0x100]{ start: end[start+0x255]: }
 }
 
-start[0x8000]{ sta zeropage.x }
+start[0x8000]{ sta zp.x }
 ```
 
 **Memory Restrictions** use range function to restrict code to specific memory locations. When you create a branch label with a range, the assembler will error if the limit is exceeded.
@@ -100,6 +101,25 @@ zp[0::256]{ x: 0 .(50) }                    // Restrict to 256 bytes
 start[0x8000 :: start+0x400]:               // Range from 0x8000 to 0x8400
 subroutines[0x9000 :: 0xA000]: // Some code
 ``` 
+## Adding Instruction Sets
+You can add new functions and instructions with just using the same macro tools as you use your assembly code.
+```
+// 6502 Add Memory to Accumulator with Carry Instruction Implementation
+<ADC_I <i>; 0x69; <i>>
+<ADC <ad>
+  <?(#<ad> == 1) 0x65; <ad>
+  <?(#<ad> == 2) 0x6D; <ad>#2
+  <?(#<ad> > 2) <ERROR address is too log>
+>
+<ADC_X <ad>; 
+  <?(#<ad> == 1) 0x75; <ad>
+  <?(#<ad> == 2) 0x7D; <ad>#2
+  <?(#<ad> > 2) <ERROR address is too log>
+>
+<ADC_Y <ad>; 0x79; <ad>#2>
+<ADC_IX <ad>; 0x61; <ad>#2>
+<ADC_IY <ad>; 0x71; <ad>#2>
+```
 
 ### What "LOTP" means?
-LOTP is an acronym that I use to give my project's name as a signature of mine. It means "Line On The Paper". From the start of my engineering hobby, I usually start a project on a paper with some sketches and ideas. It refers to the root branch of the start of the project.
+LOTP is an acronym that I use to give my project's name as a signature of mine. It means "Line On The Paper". From the beginning of my engineering and maker journey, I usually start a project on a paper with some sketches and ideas. It refers to the root of the starting point of my projects.
