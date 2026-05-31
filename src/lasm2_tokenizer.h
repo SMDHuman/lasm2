@@ -1,9 +1,9 @@
 //-----------------------------------------------------------------------------
-// lasm_tokenizer.h
+// lasm2_tokenizer.h
 // github.com/SMDHuman
 //-----------------------------------------------------------------------------
-#ifndef LASM_TOKENIZER_H
-#define LASM_TOKENIZER_H
+#ifndef LASM2_TOKENIZER_H
+#define LASM2_TOKENIZER_H
 
 #include <stdint.h>
 #include <stdio.h>
@@ -18,7 +18,6 @@ typedef enum{
 	NONE,
 	WORD,
 	NUMBER,	
-	VECTOR,
 	STRING_DB,
 	STRING_SG,
 	RBRAC_O,
@@ -30,7 +29,6 @@ typedef enum{
 	MACRO_O,
 	MACRO_C,
 	MACRO_ARG,
-	MACRO_INCLUDE,
 	NEWLINE,
 	HASH,
 	COLON,
@@ -48,20 +46,26 @@ typedef enum{
 	EXCLA,
 	DOT,
 	COMMA,
-	INDEX,
 	RANGE,
 }TOKEN_ID;
+
+typedef struct{
+  char *name;
+  char *text;
+  size_t size;
+  size_t line_count;
+}lasm_file_t;
 
 typedef struct{
 	uint16_t id;
 	uint32_t line;
 	uint32_t col;
-	char *filename;	
+	lasm_file_t *origin;	
 	char *text;
 	uint32_t text_size;
 }token_t;
 
-uint8_t lasm_tokenize(FILE* file, char *filename, hh_darray_t* tokens);
+uint8_t lasm_tokenizer(lasm_file_t* file, char *filename, token_t** tokens);
 char char_upper(char c);
 char char_lower(char c);
 uint8_t is_alpha(char c);
@@ -69,6 +73,7 @@ uint8_t is_alphanum(char c);
 uint8_t is_inside(char c, const char* chars);
 void print_warning_loc(token_t *token);
 void print_error_loc(token_t *token);
+void print_single_token(token_t *token);
 void print_tokens_as_code(hh_darray_t* tokens);
 const char* token_id_to_string(TOKEN_ID id);
 
