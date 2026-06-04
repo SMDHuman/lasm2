@@ -34,14 +34,27 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 		if(file_text[0] == '/' && comment_counter == 0) {comment_counter = 1; col++; continue;}
 		if(file_text[0] == '/' && comment_counter == 1) {comment_counter = 2; col++;continue;}
 		//=================================
+		token.col = col;
+		token.line = line;	
 		// Check chars
 		if(file_text[0] == '<'){
 						if(file_text[1] == '<'){
 							token.id = BITSHIFT_L;
 							token.text = file_text;
 							token.text_size = 2;
-						}else{
-							token.id=MACRO_O;
+						}
+						else if(file_text[1] == '#'){
+							token.id = MACRO_O;
+							token.text = file_text;
+							token.text_size = 2;
+						}
+						else if(file_text[1] == '='){
+							token.id = EQ_SMALLER;
+							token.text = file_text;
+							token.text_size = 2;
+						}
+						else{
+							token.id=SMALLER;
 							token.text = file_text;
 							token.text_size = 1;
 						}
@@ -51,20 +64,16 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 							token.id = BITSHIFT_R;
 							token.text = file_text;
 							token.text_size = 2;
-						}else{
-							token_t t1; hh_darray_get(tokens_array, hh_darray_get_item_fill(tokens_array)-1, &t1);
-							token_t t2; hh_darray_get(tokens_array, hh_darray_get_item_fill(tokens_array)-2, &t2);
-							if(t1.id == WORD && t2.id == MACRO_O){
-								hh_darray_popend(tokens_array, 0);
-								hh_darray_popend(tokens_array, 0);
-								t1.id = MACRO_ARG;
-								hh_darray_append(tokens_array, &t1);
-								col++;
-							}else {
-								token.id=MACRO_C;
-								token.text = file_text;
-								token.text_size = 1;
-							}
+						}
+						else if(file_text[1] == '='){
+							token.id = EQ_GREATER;
+							token.text = file_text;
+							token.text_size = 2;
+						}
+						else{
+							token.id=GREATER;
+							token.text = file_text;
+							token.text_size = 1;
 						}
 					}
 
@@ -74,7 +83,19 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 		if(file_text[0] == ']') {token.id=SBRAC_C; token.text = file_text; token.text_size = 1;}
 		if(file_text[0] == '{') {token.id=CBRAC_O; token.text = file_text; token.text_size = 1;}
 		if(file_text[0] == '}') {token.id=CBRAC_C; token.text = file_text; token.text_size = 1;}
-		if(file_text[0] == '#') {token.id=HASH; token.text = file_text; token.text_size = 1;}
+		if(file_text[0] == '$') {token.id=DOLLAR; token.text = file_text; token.text_size = 1;}
+		if(file_text[0] == '#') {
+						if(file_text[1] == '>'){
+							token.id = MACRO_C;
+							token.text = file_text;
+							token.text_size = 2;
+						}
+						else{
+							token.id=HASH; 
+							token.text = file_text; 
+							token.text_size = 1;
+						}
+		}
 		if(file_text[0] == ':'){
 						if(file_text[1] == ':'){
 							token.id = RANGE;
@@ -171,6 +192,10 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 			}
 			token.line=line;
 			token.col=col-token.text_size;
+			if(token.id == STRING_DB || token.id == STRING_SG){
+				token.text_size-=2; // account for the quotes
+				token.text +=	1; // account for the opening quote
+			}
 			hh_darray_append(tokens_array, &token);	
 		}
 	}
@@ -181,6 +206,8 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 	}
 	tokens_data[hh_darray_get_item_fill(tokens_array)] = (token_t){.id = EOT, .origin = file, .line = line, .col = col, .text = NULL, .text_size = 0};
 	*tokens = tokens_data;
+	hh_darray_deinit(tokens_array);
+	free(tokens_array);
 	return 0;
 }
 //-----------------------------------------------------------------------------

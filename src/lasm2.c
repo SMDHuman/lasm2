@@ -37,32 +37,38 @@ int main(int argc, char *argv[]){
   assembler.include_path = hh_argparse_get_op_short_or_long(parser, 'i', "include");
 
   // Unpack input file
-  if(load_input_file(&assembler) != 0){
-    exit_code = -1;
+  exit_code = load_input_file(&assembler);
+  if(exit_code != 0){
     goto exit_assembler;
   }
 
-  if(lasm_tokenizer(&assembler.input_file, &assembler.tokens) != 0){
-    exit_code = -1;
+  exit_code = lasm_tokenizer(&assembler.input_file, &assembler.tokens);
+  if(exit_code != 0){
     goto exit_assembler;
   }
-
-  if( lasm_parse_macro(assembler.tokens, &assembler.macros) != 0){
-    exit_code = -1;
+  
+  exit_code = lasm_parse_macro(assembler.tokens, &assembler.macros);
+  if(exit_code  != 0){
     goto exit_assembler;
   }
-
-  for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
-    print_single_token(&assembler.tokens[i]);
-    printf("\n");
-  }
+  
+  // for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
+  //   print_single_token(&assembler.tokens[i]);
+  //   printf("\n");
+  // }
 
   exit_assembler:
   // Deinitialize everything
   hh_argparse_deinit(parser);
   if(assembler.output_file) fclose(assembler.output_file);
   if(assembler.input_file.text) free(assembler.input_file.text);
-
+  if(assembler.tokens) free(assembler.tokens);
+  if(assembler.macros) free(assembler.macros);
+  if(exit_code != 0){
+    printf("[ERROR] Assembling failed with code %d\n", exit_code);
+  }else{
+    printf("[INFO] Assembling completed successfully\n");
+  }
   return exit_code;
 }
 //-----------------------------------------------------------------------------

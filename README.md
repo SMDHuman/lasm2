@@ -31,28 +31,24 @@ adc 1; sta 1 //Things happen
 ```
 
 ### Macros
-Macros are defined inside ```< >``` structure. There are 4 main types of macros: Include, Define, Define With Arguments and If Define, as we know them from C89.
+Macros are defined inside ```<# #>``` structure. There are 4 main types of macros: Include, Define, Define With Arguments and If Define, as we know them from C89.
 ```
 // INCLUDE - insert entire code from file
-<"path/to/filename.l">
+<#"path/to/filename.l"#>
 
 // DEFINE - whenever assembler sees 'recall_name', it replaces with definition
-<recall_name and other things>
+<#recall_name; and other things#>
 recall_name; recall_name
 
-// DEFINE WITH LIMITED USE - only expand N times
-<2 recall_name and other things>
-recall_name; recall_name; recall_name
-
 // DEFINE WITH ARGS - positional arguments 
-<recall_name (<arg_name>, <another_arg>)
-  and other things <arg_name> with <another_arg>
->
+<#recall_name arg_name another_arg;
+  and other things arg_name with another_arg
+#>
 recall_name (fizz, buzz)
 
 // IF DEFINE - controller for macro parser to enable or block code
-<?this can do this>      // if 'this' is defined
-<!that <that define>>    // if 'that' not defined
+<#?this can do this#>      // if 'this' is defined
+<#!that <#that define#>#>    // if 'that' not defined
 ```
 
 ### Everything is Data
@@ -66,8 +62,8 @@ Everything that doesn't belong to instruction words will be parsed as an express
 // Manipulate values with special operations
 "text with words"[2]  // Isolates character 'x' by index
 "Hello Code"[3:5]     // Isolates character 'lo' by range of indexes
-0xfff #4              // Ensure value takes 4 bytes of space
-3 + (2#32) - 1        // This is equal to '4' but occupies 32 bytes. Size of bytes inherits though evaluation
+0xfff $4              // Ensure value takes 4 bytes of space
+3 + (2$32) - 1        // This is equal to '4' but occupies 32 bytes. Size of bytes inherits though evaluation
 ```
 
 ### Labels, Namespaces & Memory Management
@@ -78,7 +74,7 @@ x[0]: y[x+1]: z[y+2]:
 
 // Can reference labels before definition
 start[0x8000 :: start + 0x200]:
-  lda # 42
+  lda_i 0x42
   loop: sta x; adc 1; bcc loop
   jmp end
 end[0xff00 + loop]: hlt
@@ -105,18 +101,18 @@ subroutines[0x9000 :: 0xA000]: // Some code
 You can add new functions and instructions with just using the same macro tools as you use your assembly code.
 ```
 // 6502 Add Memory to Accumulator with Carry Instruction Implementation
-<ADC_I <i>; 0x69; <i>>
-<ADC <ad>
-  (#<ad> == 1) ? 0x65; <ad>   :
-  (#<ad> == 2) ? 0x6D; <ad>#2 :
+<ADC_I _i; 0x69; _i>
+<ADC _ad
+  ($_ad == 1) ? 0x65; _ad   :
+  ($_ad == 2) ? 0x6D; _ad$2 :
 >
-<ADC_X <ad>; 
-  (#<ad> == 1) ? 0x75; <ad>   : 
-  (#<ad> == 2) ? 0x7D; <ad>#2 :
+<ADC_X _ad; 
+  ($_ad == 1) ? 0x75; _ad   : 
+  ($_ad == 2) ? 0x7D; _ad$2 :
 >
-<ADC_Y <ad>; 0x79; <ad>#2>
-<ADC_IX <ad>; 0x61; <ad>#2>
-<ADC_IY <ad>; 0x71; <ad>#2>
+<ADC_Y _ad; 0x79; _ad$2>
+<ADC_IX _ad; 0x61; _ad$2>
+<ADC_IY _ad; 0x71; _ad$2>
 ```
 
 ### What "LOTP" means?

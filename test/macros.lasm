@@ -1,35 +1,36 @@
 // INCLUDE - insert entire code from file
-<"blank.la">
+<#"blank.la"#>
 
 // DEFINE - whenever assembler sees 'recall_name', it replaces with definition
-<recall_name 0xfa>
+<#recall_name; 0xfa#>
 recall_name; recall_name; recall_name
 
 // DEFINE WITH ARGS - positional arguments 
-<recall_name (<arg_name>, <another_arg>)
-  0x00; <arg_name>; 0x00; <another_arg>
->
-recall_name (0xfc, 0xfd)
+<#recall_name arg_name, another_arg;
+  0x00; arg_name; 0x00; another_arg
+#>
+recall_name 0xfc, 0xfd
 
 // IF DEFINE - controller for macro parser to enable or block code
-<
+<#this;0#>
+<#
+?this; can do this
+#>      // if 'this' is defined
+<#!
+that; this do can
+#>    // if 'that' not defined
 
-?this can do this>      // if 'this' is defined
-<
-
-!that this do can>    // if 'that' not defined
-
-<ADC_I _i; 0x69; _i>
-<ADC <ad>
-  ?(#<ad> == 1) 0x65; <ad>
-  ?(#<ad> == 2) 0x6D; <ad>#2
-  ?(#<ad> > 2) <ERROR address is too log>
->
-<ADC_X <ad>; 
-  ?(#<ad> == 1) 0x75; <ad>
-  ?(#<ad> == 2) 0x7D; <ad>#2
-  ?(#<ad> > 2) <ERROR address is too log>
->
-<ADC_Y <ad>; 0x79; <ad>#2>
-<ADC_IX <ad>; 0x61; <ad>#2>
-<ADC_IY <ad>; 0x71; <ad>#2>
+<#ADC_I _i; 0x69; _i#>
+<#ADC ad;
+  ?($ad == 1) 0x65; ad
+  ?($ad == 2) 0x6D; ad$2
+  ?($ad => 2) <#ERROR; address is too log#>
+#>
+<#ADC_X ad; 
+  ?($ad == 1) 0x75; ad
+  ?($ad == 2) 0x7D; ad$2
+  ?($ad => 2) <#ERROR address is too log#>
+#>
+<#ADC_Y ad; 0x79; ad$2 #>
+<#ADC_IX ad; 0x61; ad$2 #>
+<#ADC_IY ad; 0x71; ad$2 #>

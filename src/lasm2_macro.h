@@ -14,11 +14,11 @@ typedef struct{
   token_t* args; // <xxx <arg1>, <arg2>, ...>
   token_t* content; // <...>
   size_t args_size;
-  size_t tokens_size;
+  size_t content_size;
 }macro_t;
 
 //-----------------------------------------------------------------------------
-uint8_t lasm_parse_macro(token_t *tokens, macro_t **macro);
+int lasm_parse_macro(token_t *tokens, macro_t **macro);
 void print_macro(macro_t *macro);
 
 #endif

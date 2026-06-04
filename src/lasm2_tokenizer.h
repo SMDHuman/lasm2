@@ -48,6 +48,11 @@ typedef enum{
 	DOT,
 	COMMA,
 	RANGE,
+	DOLLAR,
+	SMALLER,
+	GREATER,
+	EQ_SMALLER,
+	EQ_GREATER,
 }TOKEN_ID;
 
 typedef struct{
@@ -66,6 +71,7 @@ typedef struct{
 	uint32_t text_size;
 }token_t;
 
+//-----------------------------------------------------------------------------
 uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens);
 char char_upper(char c);
 char char_lower(char c);
@@ -77,5 +83,6 @@ void print_error_loc(token_t *token);
 void print_single_token(token_t *token);
 void print_tokens_as_code(hh_darray_t* tokens);
 const char* token_id_to_string(TOKEN_ID id);
+
 
 #endif

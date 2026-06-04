@@ -11,6 +11,7 @@ CFLAGS := -ggdb -Wall -Wextra -I include -I $(CPU_DIR) -I $(SRC_DIR)
 # Object files
 OBJECTS := $(BUILD_DIR)/lasm2_tokenizer.o \
 			 $(BUILD_DIR)/lasm2_macro.o \
+			 $(BUILD_DIR)/lasm2_tokenreader.o \
 			 #$(BUILD_DIR)/lasm2_parser.o \
 			 $(BUILD_DIR)/lasm2_assembler.o
 
