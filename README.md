@@ -107,14 +107,12 @@ You can add new functions and instructions with just using the same macro tools 
 // 6502 Add Memory to Accumulator with Carry Instruction Implementation
 <ADC_I <i>; 0x69; <i>>
 <ADC <ad>
-  <?(#<ad> == 1) 0x65; <ad>
-  <?(#<ad> == 2) 0x6D; <ad>#2
-  <?(#<ad> > 2) <ERROR address is too log>
+  (#<ad> == 1) ? 0x65; <ad>   :
+  (#<ad> == 2) ? 0x6D; <ad>#2 :
 >
 <ADC_X <ad>; 
-  <?(#<ad> == 1) 0x75; <ad>
-  <?(#<ad> == 2) 0x7D; <ad>#2
-  <?(#<ad> > 2) <ERROR address is too log>
+  (#<ad> == 1) ? 0x75; <ad>   : 
+  (#<ad> == 2) ? 0x7D; <ad>#2 :
 >
 <ADC_Y <ad>; 0x79; <ad>#2>
 <ADC_IX <ad>; 0x61; <ad>#2>

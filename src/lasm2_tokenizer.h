@@ -16,6 +16,7 @@
 //-----------------------------------------------------------------------------
 typedef enum{
 	NONE,
+	EOT,
 	WORD,
 	NUMBER,	
 	STRING_DB,
@@ -65,7 +66,7 @@ typedef struct{
 	uint32_t text_size;
 }token_t;
 
-uint8_t lasm_tokenizer(lasm_file_t* file, char *filename, token_t** tokens);
+uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens);
 char char_upper(char c);
 char char_lower(char c);
 uint8_t is_alpha(char c);

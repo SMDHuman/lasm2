@@ -3,14 +3,14 @@
 #define HH_DARRAY_IMPLEMENTATION
 #include "hh_darray.h"
 #include "lasm2_tokenizer.h"
-
+#include "lasm2_macro.h"
 
 typedef struct {
   lasm_file_t input_file;
   FILE *output_file;
   char *include_path;
   token_t *tokens;
-  //macro_t *macros;
+  macro_t *macros;
 } assembler_t;
 
 static int load_input_file(assembler_t *assembler);
@@ -41,8 +41,23 @@ int main(int argc, char *argv[]){
     exit_code = -1;
     goto exit_assembler;
   }
-  
-exit_assembler:
+
+  if(lasm_tokenizer(&assembler.input_file, &assembler.tokens) != 0){
+    exit_code = -1;
+    goto exit_assembler;
+  }
+
+  if( lasm_parse_macro(assembler.tokens, &assembler.macros) != 0){
+    exit_code = -1;
+    goto exit_assembler;
+  }
+
+  for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
+    print_single_token(&assembler.tokens[i]);
+    printf("\n");
+  }
+
+  exit_assembler:
   // Deinitialize everything
   hh_argparse_deinit(parser);
   if(assembler.output_file) fclose(assembler.output_file);
@@ -50,7 +65,7 @@ exit_assembler:
 
   return exit_code;
 }
-
+//-----------------------------------------------------------------------------
 static int load_input_file(assembler_t *assembler){
   FILE *input_file = fopen(assembler->input_file.name, "r");
   if(input_file == NULL){

@@ -6,12 +6,12 @@
 #include "hh_darray.h"
 
 //-----------------------------------------------------------------------------
-uint8_t lasm_tokenizer(lasm_file_t* file, char *filename, token_t** tokens){
+uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 	hh_darray_t *tokens_array = (hh_darray_t*)malloc(sizeof(hh_darray_t));
 	hh_darray_init(tokens_array, sizeof(token_t));
 	uint32_t line = 1, col = 0;
 	uint8_t comment_counter = 0;
-	size_t i = 0;
+	//size_t i = 0;
 	char *file_text = file->text - 1; 
 	size_t iEOF = file->size + (size_t)file->text;
 	while(1){
@@ -22,7 +22,7 @@ uint8_t lasm_tokenizer(lasm_file_t* file, char *filename, token_t** tokens){
 		file_text++;
 		col++;
 		// Leave on end of file
-		if(file_text >= iEOF) break;
+		if(file_text >= (char*)iEOF) break;
 		// Count lines 
 		if(file_text[0] == '\n'){
 			line++;
@@ -113,7 +113,7 @@ uint8_t lasm_tokenizer(lasm_file_t* file, char *filename, token_t** tokens){
 			token.id = NUMBER;
 			token.text = file_text;
 			token.text_size = 1;
-			while(is_inside(file_text[token.text_size], "0123456789abcdefxb") && file_text+token.text_size < iEOF){
+			while(is_inside(file_text[token.text_size], "0123456789abcdefxb") && file_text+token.text_size < (char*)iEOF){
 				token.text_size++;
 			}
 		}
@@ -127,7 +127,7 @@ uint8_t lasm_tokenizer(lasm_file_t* file, char *filename, token_t** tokens){
 					token.text_size++;
 					break;
 				}
-				if(file_text[token.text_size] == '\n' || file_text+token.text_size >= iEOF) {
+				if(file_text[token.text_size] == '\n' || file_text+token.text_size >= (char*)iEOF) {
 					print_error_loc(&token);
 					printf("Unterminated string\n");
 					return -1;
@@ -144,7 +144,7 @@ uint8_t lasm_tokenizer(lasm_file_t* file, char *filename, token_t** tokens){
 					token.text_size++;
 					break;
 				}
-				if(file_text[token.text_size] == '\n' || file_text+token.text_size >= iEOF) {
+				if(file_text[token.text_size] == '\n' || file_text+token.text_size >= (char*)iEOF) {
 					print_error_loc(&token);
 					printf("Unterminated string\n");
 					return -1;
@@ -179,7 +179,7 @@ uint8_t lasm_tokenizer(lasm_file_t* file, char *filename, token_t** tokens){
 	for(size_t i = 0; i < hh_darray_get_item_fill(tokens_array); i++){
 		hh_darray_get(tokens_array, i, &tokens_data[i]);
 	}
-	tokens_data[hh_darray_get_item_fill(tokens_array)] = (token_t){0};
+	tokens_data[hh_darray_get_item_fill(tokens_array)] = (token_t){.id = EOT, .origin = file, .line = line, .col = col, .text = NULL, .text_size = 0};
 	*tokens = tokens_data;
 	return 0;
 }
