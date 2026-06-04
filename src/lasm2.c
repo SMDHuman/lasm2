@@ -33,20 +33,26 @@ int main(int argc, char *argv[]){
   // Initialize assembler struct
   assembler_t assembler = {0};
   assembler.input_file.name = hh_argparse_get_positional(parser, 0);
-  assembler.output_file = fopen(hh_argparse_get_op_short_or_long(parser, 'o', "output"), "w");
   assembler.include_path = hh_argparse_get_op_short_or_long(parser, 'i', "include");
 
+  char* output_filename = "a.out";
+  if(hh_argparse_check_op_short(parser, 'o') || hh_argparse_check_op_long(parser, "output")){
+    output_filename = hh_argparse_get_op_short_or_long(parser, 'o', "output");
+  }
+  assembler.output_file = fopen(output_filename, "w");
   // Unpack input file
   exit_code = load_input_file(&assembler);
   if(exit_code != 0){
     goto exit_assembler;
   }
 
+  // Tokenize input file
   exit_code = lasm_tokenizer(&assembler.input_file, &assembler.tokens);
   if(exit_code != 0){
     goto exit_assembler;
   }
   
+  // Parse macros
   exit_code = lasm_parse_macro(assembler.tokens, &assembler.macros);
   if(exit_code  != 0){
     goto exit_assembler;

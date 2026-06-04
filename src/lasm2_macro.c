@@ -17,7 +17,7 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
     if(token_reader_peek(reader, 0)->id == MACRO_O){
       token_reader_next(reader, 1); // skip macro opener
       // skip the newline after the macro opener
-      int newline_offset = token_reader_skip_until_not(reader, NEWLINE);
+      token_reader_skip_until_not(reader, NEWLINE);
       macro_t m = {0};
       //=========================================
       // Definition type
@@ -134,6 +134,14 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
     }
   }
   //===================================
+  macro_t *macros = (macro_t*)malloc(sizeof(macro_t) * hh_darray_get_item_fill(macros_array) + 1);
+  for(size_t i = 0; i < hh_darray_get_item_fill(macros_array); i++){
+     hh_darray_get(macros_array, i, &macros[i]);
+  }
+  macros[hh_darray_get_item_fill(macros_array)-1] = (macro_t){0}; // Null terminate the macros array
+  *macro = macros;
+  hh_darray_deinit(macros_array);
+  free(macros_array);
   return 0;
 }
 

@@ -22,7 +22,7 @@ void free_token_reader(token_reader_t *reader){
 }
 //-----------------------------------------------------------------------------
 token_t* token_reader_peek(token_reader_t *reader, int offset){
-  if(reader->index + offset >= reader->size || reader->index + offset < 0){
+  if((long)reader->index + offset >= (long)reader->size || (long)reader->index + offset < 0){
     return NULL;
   }
   return &reader->tokens[reader->index + offset];
