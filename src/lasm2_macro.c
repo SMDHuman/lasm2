@@ -42,9 +42,12 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
         // Parse content
         m.content = token_reader_peek(reader, 0);
         m.content_size = 0;
-        while(token_reader_peek(reader, 0)->id != MACRO_C){
-          if(token_reader_peek(reader, 0)->id == EOT){
-            print_error_loc(token_reader_peek(reader, -1));
+        int count_openers = 1;
+        while(count_openers > 0){
+          if(token_reader_peek(reader, 0)->id == MACRO_O) count_openers++;
+          else if(token_reader_peek(reader, 0)->id == MACRO_C) count_openers--;
+          if(token_reader_EOF(reader)){
+            print_error_loc(&m.name);
             printf("Unexpected end of file while parsing macro content\n");
             return -1;
           }
@@ -88,11 +91,15 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
           token->text_size = 0;
 
           int count_openers = 1;
-          while(!token_reader_EOF(reader)){
+          while(count_openers > 0){
             if(token_reader_peek(reader, 0)->id == MACRO_O) count_openers++;
             else if(token_reader_peek(reader, 0)->id == MACRO_C) count_openers--;
+            if(token_reader_EOF(reader)){
+              print_error_loc(&m.name);
+              printf("Unexpected end of file while parsing macro content\n");
+              return -1;
+            }
             token_reader_next(reader, 1);
-            if(count_openers == 0) break;
           }
           token_reader_peek(reader, -1)->id = NONE;
           token_reader_peek(reader, -1)->text = NULL;
@@ -105,6 +112,7 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
         m.name = *token_reader_next(reader, 1);
         token_reader_skip_until_not(reader, NEWLINE);
         if(!token_reader_expect(reader, MACRO_C, 0)) return -1;
+        token_reader_next(reader, 1); // skip macro closer
         //print_macro(&m);
       }
       // Unknown type error
@@ -117,6 +125,12 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
       }
     }else{
       token_reader_next(reader, 1);
+    }
+    // Detect unexpected macro closer
+    if(token_reader_peek(reader, 0)->id == MACRO_C){
+      print_error_loc(token_reader_peek(reader, 0));
+      printf("Unexpected macro closer\n");
+      return -1;
     }
   }
   //===================================

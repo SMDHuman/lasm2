@@ -18,6 +18,7 @@ typedef struct{
 }macro_t;
 
 //-----------------------------------------------------------------------------
+
 int lasm_parse_macro(token_t *tokens, macro_t **macro);
 void print_macro(macro_t *macro);
 
