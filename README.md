@@ -101,18 +101,20 @@ subroutines[0x9000 :: 0xA000]: // Some code
 You can add new functions and instructions with just using the same macro tools as you use your assembly code.
 ```
 // 6502 Add Memory to Accumulator with Carry Instruction Implementation
-<ADC_I _i; 0x69; _i>
-<ADC _ad
-  ($_ad == 1) ? 0x65; _ad   :
-  ($_ad == 2) ? 0x6D; _ad$2 :
->
-<ADC_X _ad; 
-  ($_ad == 1) ? 0x75; _ad   : 
-  ($_ad == 2) ? 0x7D; _ad$2 :
->
-<ADC_Y _ad; 0x79; _ad$2>
-<ADC_IX _ad; 0x61; _ad$2>
-<ADC_IY _ad; 0x71; _ad$2>
+<#ADC_I _i; 0x69; _i#>
+<#ADC ad;
+  ?($ad == 1) 0x65; ad
+  ?($ad == 2) 0x6D; ad$2
+  ?($ad => 2) <#ERROR; address is too log#>
+#>
+<#ADC_X ad; 
+  ?($ad == 1) 0x75; ad
+  ?($ad == 2) 0x7D; ad$2
+  ?($ad => 2) <#ERROR address is too log#>
+#>
+<#ADC_Y ad; 0x79; ad$2 #>
+<#ADC_IX ad; 0x61; ad$2 #>
+<#ADC_IY ad; 0x71; ad$2 #>
 ```
 
 ### What "LOTP" means?
