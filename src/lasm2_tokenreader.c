@@ -121,6 +121,14 @@ size_t token_reader_skip_back_until_either(token_reader_t *reader, TOKEN_ID id1,
   return skipped;
 }
 //-----------------------------------------------------------------------------
+size_t token_reader_count_until(token_reader_t *reader, TOKEN_ID count, TOKEN_ID until){
+  size_t counted = 0;
+  for(size_t i = 0; token_reader_peek(reader, i)->id != until && token_reader_peek(reader, i)->id != EOT; i++){
+    if(token_reader_peek(reader, i)->id == count) counted++;
+  }
+  return counted;
+}
+//-----------------------------------------------------------------------------
 size_t token_reader_get_size(token_reader_t *reader){
   return reader->size;
 }

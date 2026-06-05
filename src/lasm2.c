@@ -11,6 +11,9 @@ typedef struct {
   char *include_path;
   token_t *tokens;
   macro_t *macros;
+  token_t *tokens_w_macros;
+  // labels
+  // scopes
 } assembler_t;
 
 static int load_input_file(assembler_t *assembler);
@@ -57,11 +60,17 @@ int main(int argc, char *argv[]){
   if(exit_code  != 0){
     goto exit_assembler;
   }
+
+  // Generate tokens with macros
+  exit_code = lasm_regenerate_tokens_with_macros(assembler.tokens, assembler.macros, &assembler.tokens_w_macros);
+  if(exit_code != 0){
+    goto exit_assembler;
+  }
   
-  // for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
-  //   print_single_token(&assembler.tokens[i]);
-  //   printf("\n");
-  // }
+  for (size_t i = 0; assembler.tokens_w_macros[i].id != EOT; i++){
+    print_single_token(&assembler.tokens_w_macros[i]);
+    printf("\n");
+  }
 
   exit_assembler:
   // Deinitialize everything
@@ -70,6 +79,7 @@ int main(int argc, char *argv[]){
   if(assembler.input_file.text) free(assembler.input_file.text);
   if(assembler.tokens) free(assembler.tokens);
   if(assembler.macros) free(assembler.macros);
+  if(assembler.tokens_w_macros) free(assembler.tokens_w_macros);
   if(exit_code != 0){
     printf("[ERROR] Assembling failed with code %d\n", exit_code);
   }else{

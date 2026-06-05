@@ -24,6 +24,7 @@ size_t token_reader_skip_until_not(token_reader_t *reader, TOKEN_ID id);
 size_t token_reader_skip_back_until(token_reader_t *reader, TOKEN_ID id);
 size_t token_reader_skip_until_either(token_reader_t *reader, TOKEN_ID id1, TOKEN_ID id2);
 size_t token_reader_skip_back_until_either(token_reader_t *reader, TOKEN_ID id1, TOKEN_ID id2);
+size_t token_reader_count_until(token_reader_t *reader, TOKEN_ID count, TOKEN_ID until);
 size_t token_reader_get_size(token_reader_t *reader);
 size_t token_reader_get_index(token_reader_t *reader);
 uint8_t token_reader_EOF(token_reader_t *reader);
