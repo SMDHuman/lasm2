@@ -5,6 +5,8 @@
 #include "lasm2_tokenizer.h"
 #include "hh_darray.h"
 
+char newline_string[] = ";";
+
 //-----------------------------------------------------------------------------
 uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 	hh_darray_t *tokens_array = (hh_darray_t*)malloc(sizeof(hh_darray_t));
@@ -199,6 +201,11 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 			hh_darray_append(tokens_array, &token);	
 		}
 	}
+	// Add newline at the end
+	hh_darray_append(tokens_array, hh_darray_get_end_reference(tokens_array));
+	((token_t*)hh_darray_get_end_reference(tokens_array))->id = NEWLINE;
+	((token_t*)hh_darray_get_end_reference(tokens_array))->text_size = 1;
+	((token_t*)hh_darray_get_end_reference(tokens_array))->text = (char*)newline_string;
 	// prepare output
 	token_t *tokens_data = (token_t*)malloc((hh_darray_get_item_fill(tokens_array) + 1) * sizeof(token_t));
 	for(size_t i = 0; i < hh_darray_get_item_fill(tokens_array); i++){

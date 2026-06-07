@@ -1,8 +1,7 @@
 // INCLUDE - insert entire code from file
 <#"blank.la"#>
-
 // DEFINE - whenever assembler sees 'recall_name', it replaces with definition
-<#recall_name; 0xfa#>
+<#recall_name; 0xfa 0xfb#>
 recall_name; recall_name; recall_name
 
 // DEFINE WITH ARGS - positional arguments 
@@ -12,7 +11,7 @@ recall_name; recall_name; recall_name
 recall_name_args 1, 2, 3
 
 // IF DEFINE - controller for macro parser to enable or block code
-<#this;0#>
+<#this;0xabc#>
 <#
 ?this; can do this
 #>      // if 'this' is defined
@@ -34,3 +33,17 @@ that; this; do can
 <#ADC_Y ad; 0x79; ad$2 #>
 <#ADC_IX ad; 0x61; ad$2 #>
 <#ADC_IY ad; 0x71; ad$2 #>
+
+// can you do that mr smart
+<#B; C; 2 #>
+<#C; D; 3 #>
+<#D; 4 #>
+<#A; B;1 #>
+
+A
+
+<#X; thats x; <#Y; 5#>#>
+
+Y
+X
+Y

@@ -13,6 +13,11 @@ static int get_index_if_argument(token_t* token, macro_t* macro);
 int lasm_parse_macro(token_t *tokens, macro_t **macro){
   hh_darray_t *macros_array = (hh_darray_t*)malloc(sizeof(hh_darray_t));
   hh_darray_init(macros_array, sizeof(macro_t));
+  if(*macro){
+    for(int i = 0; ((macro_t*)(*macro))[i].content_size != 0; i++){
+      hh_darray_append(macros_array, &((macro_t*)(*macro))[i]);
+    }
+  }
   //===================================
   token_reader_t *reader = new_token_reader(tokens);
   while(!token_reader_EOF(reader)){
@@ -49,6 +54,15 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
             m.args_size++;
           }
         }
+        // Make arguments local to macro
+        if(m.args_size > 0){
+          token_t* local_args = (token_t*)malloc(sizeof(token_t)*(m.args_size+1));
+          memset(local_args, 0, sizeof(token_t)*(m.args_size+1));
+          for(size_t i = 0; i < m.args_size; i++){
+            local_args[i] = m.args[i*2];
+          }
+          m.args = local_args;
+        }
         token_reader_next(reader, 1); // skip newline
         //==========================
         // Parse content
@@ -67,7 +81,17 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
           m.content_size++;
         }
         m.content_size--;
-        // print_macro(&m);
+        // Make content local to macro
+        if(m.content_size > 0){
+          token_t* local_content = (token_t*)malloc(sizeof(token_t)*(m.content_size+1));
+          memset(local_content, 0, sizeof(token_t)*(m.content_size+1));
+          for(size_t i = 0; i < m.content_size; i++){
+            local_content[i] = m.content[i];
+          }
+          m.args = local_content;
+        }
+        //...
+        print_macro(&m);
         hh_darray_append(macros_array, &m);
       }
       //=========================================
@@ -176,11 +200,11 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
     }
   }
   //===================================
-  macro_t *macros = (macro_t*)malloc(sizeof(macro_t) * hh_darray_get_item_fill(macros_array) + 1);
+  macro_t *macros = (macro_t*)malloc(sizeof(macro_t) * (hh_darray_get_item_fill(macros_array) + 1));
   for(size_t i = 0; i < hh_darray_get_item_fill(macros_array); i++){
      hh_darray_get(macros_array, i, &macros[i]);
   }
-  macros[hh_darray_get_item_fill(macros_array)-1] = (macro_t){0}; // Null terminate the macros array
+  macros[hh_darray_get_item_fill(macros_array)] = (macro_t){0}; // Null terminate the macros array
   *macro = macros;
   hh_darray_deinit(macros_array);
   free(macros_array);
@@ -210,14 +234,16 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
     }
     //=========================================
     // Check for macro usage
+    uint8_t found = 0;
     if(token_reader_peek(reader, 0)->id == WORD){
-      uint8_t found = 0;
       macro_t *found_macro = NULL;
       for(size_t i = 0; macros[i].name.text_size != 0; i++){
         if(macros[i].name.text_size == token_reader_peek(reader, 0)->text_size && 
           memcmp(macros[i].name.text, token_reader_peek(reader, 0)->text, macros[i].name.text_size) == 0){
-          found = 1;
-          found_macro = &macros[i];
+          if(token_reader_peek(reader, 0)->line > macros[i].name.line){
+            found = 1;
+            found_macro = &macros[i];
+          }
           break;
         }
       }
@@ -234,16 +260,16 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
         // Extract input argument if any 
         token_t* argument_tokens[arg_count]; memset(argument_tokens, 0, arg_count*sizeof(size_t));
         size_t argument_sizes[arg_count]; memset(argument_sizes, 0, arg_count*sizeof(size_t));
-        for(int i = 0; i < arg_count; i++){
+        for(size_t i = 0; i < arg_count; i++){
           argument_tokens[i] = token_reader_peek(reader, 0);
           argument_sizes[i] = token_reader_skip_until_either(reader, COMMA, NEWLINE);
           if(i < arg_count-1) token_reader_next(reader, 1);
         }
         // Dump the macro
-        for(int i = 0; i < found_macro->content_size; i++){
+        for(size_t i = 0; i < found_macro->content_size; i++){
           int if_arg = get_index_if_argument(&found_macro->content[i], found_macro);
           if(if_arg >= 0){
-            for(int j = 0; j < argument_sizes[if_arg]; j++){
+            for(size_t j = 0; j < argument_sizes[if_arg]; j++){
               hh_darray_append(gtokens_array, &argument_tokens[if_arg][j]);
               ((token_t*)hh_darray_get_end_reference(gtokens_array))->line = token_reader_peek(reader, -1)->line;
             }
@@ -268,9 +294,9 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
       }
     }
     //=========================================
-    else if(token_reader_peek(reader, 0)->id != NONE){
+    if(token_reader_peek(reader, 0)->id != NONE && !found){
       if(token_reader_peek(reader, 0)->id == NEWLINE && hh_darray_get_item_fill(gtokens_array) > 0){
-        if(!((token_t*)hh_darray_get_end_reference(gtokens_array))->id == NEWLINE){
+        if(((token_t*)hh_darray_get_end_reference(gtokens_array))->id != NEWLINE){
           hh_darray_append(gtokens_array, token_reader_peek(reader, 0));
         }
       }
@@ -278,9 +304,17 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
     }
     token_reader_next(reader, 1);
   }
+  hh_darray_append(gtokens_array, token_reader_peek(reader, 0));
 	// prepare output
-	token_t *tokens_data = (token_t*)malloc((hh_darray_get_item_fill(gtokens_array) + 1) * sizeof(token_t));
-	for(size_t i = 0; i < hh_darray_get_item_fill(gtokens_array); i++){
+  token_t *tokens_data;
+  if(*regenerated_tokens){
+    *regenerated_tokens = realloc(*regenerated_tokens, (hh_darray_get_item_fill(gtokens_array) + 1) * sizeof(token_t));
+    tokens_data = *regenerated_tokens;
+  }else{ 
+    tokens_data = (token_t*)malloc((hh_darray_get_item_fill(gtokens_array) + 1) * sizeof(token_t));
+  }
+  printf("gtokens size: %lu\n", hh_darray_get_item_fill(gtokens_array));
+  for(size_t i = 0; i < hh_darray_get_item_fill(gtokens_array); i++){
 		hh_darray_get(gtokens_array, i, &tokens_data[i]);
 	}
 	tokens_data[hh_darray_get_item_fill(gtokens_array)] = (token_t){.id = EOT, .text = NULL, .text_size = 0};
@@ -292,9 +326,9 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
 //-----------------------------------------------------------------------------
 static int get_index_if_argument(token_t* token, macro_t* macro){
   if(token->id != WORD) return -1;
-  for(int i = 0; i < macro->args_size; i++){
-    if(macro->args[i*2].text_size == token->text_size && 
-       memcmp(macro->args[i*2].text, token->text, token->text_size) == 0){
+  for(size_t i = 0; i < macro->args_size; i++){
+    if(macro->args[i].text_size == token->text_size && 
+       memcmp(macro->args[i].text, token->text, token->text_size) == 0){
       return i;
     }
   }
@@ -307,7 +341,7 @@ void print_macro(macro_t *macro){
   printf("  Name: "); print_single_token(&macro->name); printf("\n");
   printf("  Arguments (%zu): ", macro->args_size);
   for(size_t i = 0; i < macro->args_size; i++){
-    printf("%.*s ", macro->args[i*2].text_size, macro->args[i*2].text);
+    printf("%.*s ", macro->args[i].text_size, macro->args[i].text);
     printf(",");
   }
   printf("\n  Content (%zu tokens):\n", macro->content_size);

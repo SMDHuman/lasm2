@@ -4,6 +4,8 @@
 #include "hh_darray.h"
 #include "lasm2_tokenizer.h"
 #include "lasm2_macro.h"
+#include <time.h>
+
 
 typedef struct {
   lasm_file_t input_file;
@@ -21,6 +23,7 @@ void help_command(const char *invoc_name);
 
 //----------------------------------------------------------------------------- 
 int main(int argc, char *argv[]){
+  struct timespec start_time; timespec_get(&start_time, TIME_UTC); 
   int exit_code = 0;
   // Parse Arguments
   hh_argparse_t *parser = hh_argparse_init(argc, argv);
@@ -56,19 +59,21 @@ int main(int argc, char *argv[]){
   }
   
   // Parse macros
-  exit_code = lasm_parse_macro(assembler.tokens, &assembler.macros);
-  if(exit_code  != 0){
-    goto exit_assembler;
-  }
-
+  
   // Generate tokens with macros
-  exit_code = lasm_regenerate_tokens_with_macros(assembler.tokens, assembler.macros, &assembler.tokens_w_macros);
-  if(exit_code != 0){
-    goto exit_assembler;
+  for (int i = 0; i < 16; i++){
+    exit_code = lasm_parse_macro(assembler.tokens, &assembler.macros);
+    if(exit_code  != 0){
+      goto exit_assembler;
+    }
+    exit_code = lasm_regenerate_tokens_with_macros(assembler.tokens, assembler.macros, &assembler.tokens);
+    if(exit_code != 0){
+      goto exit_assembler;
+    }
   }
   
-  for (size_t i = 0; assembler.tokens_w_macros[i].id != EOT; i++){
-    print_single_token(&assembler.tokens_w_macros[i]);
+  for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
+    print_single_token(&assembler.tokens[i]);
     printf("\n");
   }
 
@@ -80,11 +85,15 @@ int main(int argc, char *argv[]){
   if(assembler.tokens) free(assembler.tokens);
   if(assembler.macros) free(assembler.macros);
   if(assembler.tokens_w_macros) free(assembler.tokens_w_macros);
+  //..,
+  struct timespec end_time; timespec_get(&end_time, TIME_UTC); 
   if(exit_code != 0){
     printf("[ERROR] Assembling failed with code %d\n", exit_code);
   }else{
-    printf("[INFO] Assembling completed successfully\n");
+    printf("[INFO] Assembling completed successfully");
+    printf(" (%ld ms)\n", (end_time.tv_nsec - start_time.tv_nsec)/1000000);
   }
+
   return exit_code;
 }
 //-----------------------------------------------------------------------------
