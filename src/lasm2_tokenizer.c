@@ -26,6 +26,7 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 		// Leave on end of file
 		if(file_text >= (char*)iEOF) break;
 		// Count lines 
+		token.line = line;	
 		if(file_text[0] == '\n'){
 			line++;
 			col = 1;
@@ -36,8 +37,6 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 		if(file_text[0] == '/' && comment_counter == 0) {comment_counter = 1; col++; continue;}
 		if(file_text[0] == '/' && comment_counter == 1) {comment_counter = 2; col++;continue;}
 		//=================================
-		token.col = col;
-		token.line = line;	
 		// Check chars
 		if(file_text[0] == '<'){
 						if(file_text[1] == '<'){
@@ -192,7 +191,6 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 				file_text+=token.text_size-1; 
 				col+=token.text_size-1;
 			}
-			token.line=line;
 			token.col=col-token.text_size;
 			if(token.id == STRING_DB || token.id == STRING_SG){
 				token.text_size-=2; // account for the quotes
@@ -201,11 +199,6 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 			hh_darray_append(tokens_array, &token);	
 		}
 	}
-	// Add newline at the end
-	hh_darray_append(tokens_array, hh_darray_get_end_reference(tokens_array));
-	((token_t*)hh_darray_get_end_reference(tokens_array))->id = NEWLINE;
-	((token_t*)hh_darray_get_end_reference(tokens_array))->text_size = 1;
-	((token_t*)hh_darray_get_end_reference(tokens_array))->text = (char*)newline_string;
 	// prepare output
 	token_t *tokens_data = (token_t*)malloc((hh_darray_get_item_fill(tokens_array) + 1) * sizeof(token_t));
 	for(size_t i = 0; i < hh_darray_get_item_fill(tokens_array); i++){

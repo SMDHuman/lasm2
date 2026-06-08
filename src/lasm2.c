@@ -6,7 +6,6 @@
 #include "lasm2_macro.h"
 #include <time.h>
 
-
 typedef struct {
   lasm_file_t input_file;
   FILE *output_file;
@@ -58,14 +57,13 @@ int main(int argc, char *argv[]){
     goto exit_assembler;
   }
   
-  // Parse macros
-  
-  // Generate tokens with macros
   for (int i = 0; i < 16; i++){
+    // Parse macros
     exit_code = lasm_parse_macro(assembler.tokens, &assembler.macros);
     if(exit_code  != 0){
       goto exit_assembler;
     }
+    // Generate tokens with macros
     exit_code = lasm_regenerate_tokens_with_macros(assembler.tokens, assembler.macros, &assembler.tokens);
     if(exit_code != 0){
       goto exit_assembler;
@@ -76,6 +74,7 @@ int main(int argc, char *argv[]){
     print_single_token(&assembler.tokens[i]);
     printf("\n");
   }
+  
 
   exit_assembler:
   // Deinitialize everything
@@ -107,11 +106,12 @@ static int load_input_file(assembler_t *assembler){
   fseek(input_file, 0, SEEK_END);
   assembler->input_file.size = ftell(input_file);
   fseek(input_file, 0, SEEK_SET);
-  assembler->input_file.text = (char*)malloc(assembler->input_file.size + 1);
+  assembler->input_file.text = (char*)malloc(assembler->input_file.size + 2);
   fread(assembler->input_file.text, 1, assembler->input_file.size, input_file);
-  assembler->input_file.text[assembler->input_file.size] = 0;
+  assembler->input_file.text[assembler->input_file.size] = '\n';
+  assembler->input_file.size ++;
+  assembler->input_file.text[assembler->input_file.size+1] = 0;
   fclose(input_file);
-
   for (size_t i = 0; i < assembler->input_file.size; i++){
     if(assembler->input_file.text[i] == '\n') assembler->input_file.line_count++;
   }

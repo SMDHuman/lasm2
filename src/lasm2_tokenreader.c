@@ -13,6 +13,7 @@ token_reader_t *new_token_reader(token_t *tokens){
   while(tokens[reader->size].id != EOT){
     reader->size++;
   }
+  reader->size+= 1;
   reader->index = 0;
   return reader;
 }
@@ -22,16 +23,20 @@ void free_token_reader(token_reader_t *reader){
 }
 //-----------------------------------------------------------------------------
 token_t* token_reader_peek(token_reader_t *reader, int offset){
-  if((long)reader->index + offset >= (long)reader->size || (long)reader->index + offset < 0){
-    return NULL;
+  if((long)reader->index + offset >= (long)reader->size){
+    return &reader->tokens[reader->size-1];
   }
+  else if((long)reader->index + offset < 0) return &reader->tokens[0];
   return &reader->tokens[reader->index + offset];
 }
 //-----------------------------------------------------------------------------
 token_t* token_reader_next(token_reader_t *reader, int offset){
   token_t *token = token_reader_peek(reader, 0);
   if(token == NULL) return NULL;
-  reader->index += offset;
+  if((long)reader->index + offset >= (long)reader->size) reader->index = reader->size;
+  else if((long)reader->index + offset < 0) reader->index = 0;
+  else reader->index += offset;
+
   return token;
 }
 //-----------------------------------------------------------------------------
@@ -138,5 +143,5 @@ size_t token_reader_get_index(token_reader_t *reader){
 }
 //-----------------------------------------------------------------------------
 uint8_t token_reader_EOF(token_reader_t *reader){
-  return reader->index >= reader->size-1;
+  return reader->index >= reader->size;
 }

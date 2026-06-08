@@ -91,7 +91,7 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
           m.args = local_content;
         }
         //...
-        print_macro(&m);
+        //print_macro(&m);
         hh_darray_append(macros_array, &m);
       }
       //=========================================
@@ -169,7 +169,6 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
             token_reader_peek(reader, 0)->text_size = 0;
             token_reader_next(reader, 1);
           }
-
         }
       }
       //=========================================
@@ -210,6 +209,10 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
   free(macros_array);
   return 0;
 }
+
+
+
+
 //-----------------------------------------------------------------------------
 int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t **regenerated_tokens){
   hh_darray_t *gtokens_array = (hh_darray_t*)malloc(sizeof(hh_darray_t));
@@ -294,17 +297,21 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
       }
     }
     //=========================================
-    if(token_reader_peek(reader, 0)->id != NONE && !found){
-      if(token_reader_peek(reader, 0)->id == NEWLINE && hh_darray_get_item_fill(gtokens_array) > 0){
-        if(((token_t*)hh_darray_get_end_reference(gtokens_array))->id != NEWLINE){
-          hh_darray_append(gtokens_array, token_reader_peek(reader, 0));
-        }
+    if(!found){
+      if(token_reader_peek(reader, 0)->id != NONE){
+        hh_darray_append(gtokens_array, token_reader_peek(reader, 0));
       }
-      else hh_darray_append(gtokens_array, token_reader_peek(reader, 0));
+      token_reader_next(reader, 1);
     }
-    token_reader_next(reader, 1);
+    //...
+    size_t array_size = hh_darray_get_item_fill(gtokens_array);
+    if(array_size >= 2){
+      if(((token_t*)hh_darray_get_reference(gtokens_array, array_size-1))->id == NEWLINE &&
+          ((token_t*)hh_darray_get_reference(gtokens_array, array_size-2))->id == NEWLINE){
+        hh_darray_popend(gtokens_array, 0);
+      }
+    }
   }
-  hh_darray_append(gtokens_array, token_reader_peek(reader, 0));
 	// prepare output
   token_t *tokens_data;
   if(*regenerated_tokens){
@@ -313,13 +320,13 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
   }else{ 
     tokens_data = (token_t*)malloc((hh_darray_get_item_fill(gtokens_array) + 1) * sizeof(token_t));
   }
-  printf("gtokens size: %lu\n", hh_darray_get_item_fill(gtokens_array));
   for(size_t i = 0; i < hh_darray_get_item_fill(gtokens_array); i++){
 		hh_darray_get(gtokens_array, i, &tokens_data[i]);
 	}
 	tokens_data[hh_darray_get_item_fill(gtokens_array)] = (token_t){.id = EOT, .text = NULL, .text_size = 0};
 	*regenerated_tokens = tokens_data;
 	hh_darray_deinit(gtokens_array);
+  free_token_reader(reader);
 	free(gtokens_array);
   return 0;
 }
