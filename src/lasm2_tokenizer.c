@@ -275,6 +275,9 @@ void print_error_loc(token_t *token){
 	// Print the offending token
 	//printf("[DEBUG] Offending token: '%s'\n", token->text);
 	//printf("[DEBUG] ID: %s\n", token_id_to_string(token->id));
+	if(token->parent_copy){
+		print_error_loc(token->parent_copy);
+	}
 	printf("[ERROR] '%s':%d:%d: ", token->origin->name, token->line, token->col);
 }
 void print_single_token(token_t *token){

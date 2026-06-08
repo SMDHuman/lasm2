@@ -37,7 +37,9 @@ int main(int argc, char *argv[]){
   // Initialize assembler struct
   assembler_t assembler = {0};
   assembler.input_file.name = hh_argparse_get_positional(parser, 0);
-  assembler.include_paths = (char**)malloc(sizeof(char*)*3);
+
+  // Extract include paths
+  assembler.include_paths = (char**)malloc(sizeof(char*)*2);
   char* last_slash = strchr(assembler.input_file.name, '/');
   int dir_name_size = (int)(last_slash-assembler.input_file.name);
   assembler.include_paths[0] = (char*)malloc(dir_name_size+1);
@@ -79,10 +81,10 @@ int main(int argc, char *argv[]){
     }
   }
   
-  for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
-    print_single_token(&assembler.tokens[i]);
-    printf("\n");
-  }
+  // for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
+  //   print_single_token(&assembler.tokens[i]);
+  //   printf("\n");
+  // }
   
 
   exit_assembler:
