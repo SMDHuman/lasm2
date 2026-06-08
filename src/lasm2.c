@@ -65,6 +65,7 @@ int main(int argc, char *argv[]){
     goto exit_assembler;
   }
   
+  // Make multiple passes to slice macros
   for (int i = 0; i < 16; i++){
     // Parse macros
     exit_code = lasm_parse_macro(assembler.tokens, &assembler.macros);

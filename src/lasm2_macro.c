@@ -310,6 +310,8 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
           printf("Expected %lu arguments for macro, but %lu given\n", found_macro->args_size, arg_count);
           return -1;
         }
+        token_t* parent_token = (token_t*)malloc(sizeof(token_t));
+        memcpy(parent_token, token_reader_peek(reader, 0), sizeof(token_t));
         token_reader_next(reader, 1); // Skip name
         // Extract input argument if any 
         token_t* argument_tokens[arg_count]; memset(argument_tokens, 0, arg_count*sizeof(size_t));
@@ -320,20 +322,18 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
           if(i < arg_count-1) token_reader_next(reader, 1);
         }
         // Dump the macro
-        token_t* parent_token = (token_t*)malloc(sizeof(token_t));
-        memcpy(parent_token, &found_macro->name, sizeof(token_t));
         for(size_t i = 0; i < found_macro->content_size; i++){
           int if_arg = get_index_if_argument(&found_macro->content[i], found_macro);
           if(if_arg >= 0){
             for(size_t j = 0; j < argument_sizes[if_arg]; j++){
               hh_darray_append(gtokens_array, &argument_tokens[if_arg][j]);
-              ((token_t*)hh_darray_get_end_reference(gtokens_array))->line = token_reader_peek(reader, -1)->line;
+              // ((token_t*)hh_darray_get_end_reference(gtokens_array))->line = token_reader_peek(reader, -1)->line;
               ((token_t*)hh_darray_get_end_reference(gtokens_array))->parent_copy = parent_token;
             }
           }
           else{
             hh_darray_append(gtokens_array, &found_macro->content[i]);
-            ((token_t*)hh_darray_get_end_reference(gtokens_array))->line = token_reader_peek(reader, -1)->line;
+            // ((token_t*)hh_darray_get_end_reference(gtokens_array))->line = token_reader_peek(reader, -1)->line;
               ((token_t*)hh_darray_get_end_reference(gtokens_array))->parent_copy = parent_token;
           }
         }

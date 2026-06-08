@@ -285,7 +285,7 @@ void print_single_token(token_t *token){
 	char *text = malloc(token->text_size + 1);
 	memcpy(text, token->text, token->text_size);
 	text[token->text_size] = 0;
-	printf("[%s, %d:%d, %s]", token_id_to_string(token->id), token->line, token->col, text);
+	printf("['%s', %s, %d:%d, %s]", token->origin->name ,token_id_to_string(token->id), token->line, token->col, text);
 	free(text);
 }
 void print_tokens_as_code(hh_darray_t* tokens){
@@ -325,6 +325,9 @@ const char* token_id_to_string(TOKEN_ID id){
 		case SLASH: return "SLASH";
 		case BITSHIFT_L: return "BITSHIFT_L";
 		case BITSHIFT_R: return "BITSHIFT_R";
+		case BITW_OR: return "BITW_OR";
+		case BITW_AND: return "BITW_AND";
+		case BITW_XOR: return "BITW_XOR";
 		case BSLASH: return "BSLASH";
 		case ASTERISK: return "ASTERISK";
 		case QUEST: return "QUEST";
@@ -332,6 +335,11 @@ const char* token_id_to_string(TOKEN_ID id){
 		case DOT: return "DOT";
 		case COMMA: return "COMMA";
 		case RANGE: return "RANGE";
+		case DOLLAR: return "DOLLAR";
+		case SMALLER: return "SMALLER";
+		case GREATER: return "GREATER";
+		case EQ_SMALLER: return "EQ_SMALLER";
+		case EQ_GREATER: return "EQ_GREATER";
 		default: return "UNKNOWN";
 	}
 }
