@@ -7,6 +7,8 @@
 #include "lasm2_tokenreader.h"
 #include "lasm2_macro.h"
 
+#include <dirent.h>
+
 static int get_index_if_argument(token_t* token, macro_t* macro);
 
 //-----------------------------------------------------------------------------
@@ -172,7 +174,7 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
         }
       }
       //=========================================
-      // Include type
+      //Skip include type
       else if(token_reader_peek(reader, 0)->id == STRING_DB || token_reader_peek(reader, 0)->id == STRING_SG){
         m.name = *token_reader_next(reader, 1);
         token_reader_skip_until_not(reader, NEWLINE);
@@ -214,25 +216,74 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
 
 
 //-----------------------------------------------------------------------------
-int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t **regenerated_tokens){
+int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t **regenerated_tokens, lasm_file_t **include_files, char **include_paths){
   hh_darray_t *gtokens_array = (hh_darray_t*)malloc(sizeof(hh_darray_t));
   hh_darray_init(gtokens_array, sizeof(token_t));
   token_reader_t *reader = new_token_reader(tokens);
   while(!token_reader_EOF(reader)){
     //=========================================
-    // Skip macro definitions
+    // Check for includes and skip macros
     if(token_reader_peek(reader, 0)->id == MACRO_O){
-      int count_openers = 1;
       token_reader_next(reader, 1);
-      while(count_openers > 0){
-        if(token_reader_peek(reader, 0)->id == MACRO_O) count_openers++;
-        else if(token_reader_peek(reader, 0)->id == MACRO_C) count_openers--;
-        if(token_reader_EOF(reader)){
-          print_error_loc(token_reader_peek(reader, 0));
-          printf("Unexpected end of file while skipping macro definition\n");
+      // Include new file
+      if(token_reader_peek(reader, 0)->id == STRING_DB || token_reader_peek(reader, 0)->id == STRING_SG){
+        // Append new include file to files list
+        lasm_file_t* include_file; 
+        if(*include_files){
+          size_t size = 1; for(; include_files[size-1]->name == 0; size++);
+          *include_files = realloc(*include_files, sizeof(lasm_file_t)*(size+1)); 
+          include_file = include_files[size];
+        }else{
+          *include_files = (lasm_file_t*)malloc(sizeof(lasm_file_t)*2);
+          include_file = include_files[0];
+        }
+        //...
+        include_file->name = (char*)malloc(token_reader_peek(reader, 0)->text_size+1);
+        memcpy(include_file->name, token_reader_peek(reader, 0)->text, token_reader_peek(reader, 0)->text_size);
+        include_file->name[token_reader_peek(reader, 0)->text_size] = 0;
+        //...
+        token_t* parent_token = (token_t*)malloc(sizeof(token_t));
+        memcpy(parent_token, token_reader_peek(reader, 0), sizeof(token_t));
+        token_reader_next(reader, 1);
+        // Find referred file in include paths
+        char *name = find_file_in_paths(include_file->name, include_paths);
+        free(include_file->name);
+        if(!name){
+          print_error_loc(parent_token);
+          printf("[ERROR] Include file can not found any in paths");
           return -1;
         }
-        token_reader_next(reader, 1);
+        include_file->name = name;
+        // Tokenize the file
+        printf("[INFO/INCLUDE] Tokenizing include file %s\n", include_file->name);
+        token_t* new_tokens;
+        int err = load_input_file(include_file->name, include_file);
+        if(err) return -1;
+        err = lasm_tokenizer(include_file, &new_tokens);
+        if(err) return -1;
+        //Dump the tokens
+        for(int i = 0; new_tokens[i].id != EOT; i++){
+          new_tokens[i].parent_copy = parent_token;
+          hh_darray_append(gtokens_array, &new_tokens[i]);
+        }
+        token_reader_skip_until_not(reader, NEWLINE);
+        if(!token_reader_expect(reader, MACRO_C, 0)) return -1;
+        token_reader_next(reader, 1); // skip macro closer
+        //print_macro(&m);
+      }
+      // Skip Macro
+      else{
+        int count_openers = 1;
+        while(count_openers > 0){
+          if(token_reader_peek(reader, 0)->id == MACRO_O) count_openers++;
+          else if(token_reader_peek(reader, 0)->id == MACRO_C) count_openers--;
+          if(token_reader_EOF(reader)){
+            print_error_loc(token_reader_peek(reader, 0));
+            printf("Unexpected end of file while skipping macro definition\n");
+            return -1;
+          }
+          token_reader_next(reader, 1);
+        }
       }
     }
     //=========================================
@@ -269,17 +320,21 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
           if(i < arg_count-1) token_reader_next(reader, 1);
         }
         // Dump the macro
+        token_t* parent_token = (token_t*)malloc(sizeof(token_t));
+        memcpy(parent_token, &found_macro->name, sizeof(token_t));
         for(size_t i = 0; i < found_macro->content_size; i++){
           int if_arg = get_index_if_argument(&found_macro->content[i], found_macro);
           if(if_arg >= 0){
             for(size_t j = 0; j < argument_sizes[if_arg]; j++){
               hh_darray_append(gtokens_array, &argument_tokens[if_arg][j]);
               ((token_t*)hh_darray_get_end_reference(gtokens_array))->line = token_reader_peek(reader, -1)->line;
+              ((token_t*)hh_darray_get_end_reference(gtokens_array))->parent_copy = parent_token;
             }
           }
           else{
             hh_darray_append(gtokens_array, &found_macro->content[i]);
             ((token_t*)hh_darray_get_end_reference(gtokens_array))->line = token_reader_peek(reader, -1)->line;
+              ((token_t*)hh_darray_get_end_reference(gtokens_array))->parent_copy = parent_token;
           }
         }
 
@@ -341,6 +396,31 @@ static int get_index_if_argument(token_t* token, macro_t* macro){
   }
   return -1;
 } 
+
+//-----------------------------------------------------------------------------
+char* find_file_in_paths(char* file_name, char** paths){
+  if(!file_name || !paths) return NULL;
+  
+  for(int i = 0; paths[i] != NULL; i++){
+    DIR* dir = opendir(paths[i]);
+    if(!dir) continue;
+    
+    struct dirent* entry;
+    while((entry = readdir(dir)) != NULL){
+      if(strcmp(entry->d_name, file_name) == 0){
+        closedir(dir);
+        // Construct full path
+        size_t path_len = strlen(paths[i]);
+        size_t file_len = strlen(file_name);
+        char* full_path = (char*)malloc(path_len + file_len + 2); // +2 for '/' and '\0'
+        sprintf(full_path, "%s/%s", paths[i], file_name);
+        return full_path;
+      }
+    }
+    closedir(dir);
+  }
+  return NULL;
+}
 
 //-----------------------------------------------------------------------------
 void print_macro(macro_t *macro){

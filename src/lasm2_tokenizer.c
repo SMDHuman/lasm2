@@ -8,6 +8,33 @@
 char newline_string[] = ";";
 
 //-----------------------------------------------------------------------------
+int load_input_file(char* input_name, lasm_file_t* file){
+  FILE *input_file = fopen(input_name, "r");
+	file->name = input_name;
+  if(input_file == NULL){
+    printf("[ERROR] Failed to open input file '%s'\n", input_name);
+    return -1;
+  }
+	// Read the content of the file
+  fseek(input_file, 0, SEEK_END);
+  file->size = ftell(input_file);
+  fseek(input_file, 0, SEEK_SET);
+	file->text = (char*)malloc(file->size + 3); // Third is the charm
+  fread(file->text, 1, file->size, input_file);
+  file->text[file->size] = '\n';
+  file->size++;
+  file->text[file->size+1] = 0;
+  fclose(input_file);
+	//...
+	for (size_t i = 0; i < file->size; i++){
+    if(file->text[i] == '\n') file->line_count++;
+  }
+  file->line_count++;
+	//...
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
 uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 	hh_darray_t *tokens_array = (hh_darray_t*)malloc(sizeof(hh_darray_t));
 	hh_darray_init(tokens_array, sizeof(token_t));
@@ -251,6 +278,10 @@ void print_error_loc(token_t *token){
 	printf("[ERROR] '%s':%d:%d: ", token->origin->name, token->line, token->col);
 }
 void print_single_token(token_t *token){
+	if(token->parent_copy){
+		 print_single_token(token->parent_copy);
+		 printf(" -> ");
+	}
 	char *text = malloc(token->text_size + 1);
 	memcpy(text, token->text, token->text_size);
 	text[token->text_size] = 0;
@@ -272,6 +303,7 @@ void print_tokens_as_code(hh_darray_t* tokens){
 const char* token_id_to_string(TOKEN_ID id){
 	switch(id){
 		case NONE: return "NONE";
+		case EOT: return "EOT";
 		case WORD: return "WORD";
 		case NUMBER: return "NUMBER";
 		case STRING_DB: return "STRING_DB";

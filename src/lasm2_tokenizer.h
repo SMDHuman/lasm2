@@ -62,16 +62,18 @@ typedef struct{
   size_t line_count;
 }lasm_file_t;
 
-typedef struct{
+typedef struct t_token{
 	uint16_t id;
 	uint32_t line;
 	uint32_t col;
-	lasm_file_t *origin;	
-	char *text;
 	uint32_t text_size;
+	char *text;
+	lasm_file_t *origin;	
+	struct t_token* parent_copy;
 }token_t;
 
 //-----------------------------------------------------------------------------
+int load_input_file(char* input_name, lasm_file_t* file);
 uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens);
 char char_upper(char c);
 char char_lower(char c);

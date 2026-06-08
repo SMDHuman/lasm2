@@ -8,16 +8,15 @@
 
 typedef struct {
   lasm_file_t input_file;
+  lasm_file_t* include_files;
   FILE *output_file;
-  char *include_path;
+  char** include_paths;
   token_t *tokens;
   macro_t *macros;
-  token_t *tokens_w_macros;
   // labels
   // scopes
 } assembler_t;
 
-static int load_input_file(assembler_t *assembler);
 void help_command(const char *invoc_name);
 
 //----------------------------------------------------------------------------- 
@@ -38,7 +37,14 @@ int main(int argc, char *argv[]){
   // Initialize assembler struct
   assembler_t assembler = {0};
   assembler.input_file.name = hh_argparse_get_positional(parser, 0);
-  assembler.include_path = hh_argparse_get_op_short_or_long(parser, 'i', "include");
+  assembler.include_paths = (char**)malloc(sizeof(char*)*3);
+  char* last_slash = strchr(assembler.input_file.name, '/');
+  int dir_name_size = (int)(last_slash-assembler.input_file.name);
+  assembler.include_paths[0] = (char*)malloc(dir_name_size+1);
+  memcpy(assembler.include_paths[0], assembler.input_file.name, dir_name_size);
+  printf("Input file directory: %s\n", assembler.include_paths[0]);
+
+  //assembler.include_paths = hh_argparse_get_op_short_or_long(parser, 'i', "include");
 
   char* output_filename = "a.out";
   if(hh_argparse_check_op_short(parser, 'o') || hh_argparse_check_op_long(parser, "output")){
@@ -46,12 +52,14 @@ int main(int argc, char *argv[]){
   }
   assembler.output_file = fopen(output_filename, "w");
   // Unpack input file
-  exit_code = load_input_file(&assembler);
+  printf("[INFO] Reading input file\n");
+  exit_code = load_input_file(assembler.input_file.name, &assembler.input_file);
   if(exit_code != 0){
     goto exit_assembler;
   }
 
   // Tokenize input file
+  printf("[INFO] Tokenizing '%s'\n", assembler.input_file.name);
   exit_code = lasm_tokenizer(&assembler.input_file, &assembler.tokens);
   if(exit_code != 0){
     goto exit_assembler;
@@ -64,7 +72,7 @@ int main(int argc, char *argv[]){
       goto exit_assembler;
     }
     // Generate tokens with macros
-    exit_code = lasm_regenerate_tokens_with_macros(assembler.tokens, assembler.macros, &assembler.tokens);
+    exit_code = lasm_regenerate_tokens_with_macros(assembler.tokens, assembler.macros, &assembler.tokens, &assembler.include_files, assembler.include_paths);
     if(exit_code != 0){
       goto exit_assembler;
     }
@@ -83,7 +91,6 @@ int main(int argc, char *argv[]){
   if(assembler.input_file.text) free(assembler.input_file.text);
   if(assembler.tokens) free(assembler.tokens);
   if(assembler.macros) free(assembler.macros);
-  if(assembler.tokens_w_macros) free(assembler.tokens_w_macros);
   //..,
   struct timespec end_time; timespec_get(&end_time, TIME_UTC); 
   if(exit_code != 0){
@@ -94,30 +101,6 @@ int main(int argc, char *argv[]){
   }
 
   return exit_code;
-}
-//-----------------------------------------------------------------------------
-static int load_input_file(assembler_t *assembler){
-  FILE *input_file = fopen(assembler->input_file.name, "r");
-  if(input_file == NULL){
-    printf("[ERROR] Failed to open input file '%s'\n", assembler->input_file.name);
-    return -1;
-  }
-
-  fseek(input_file, 0, SEEK_END);
-  assembler->input_file.size = ftell(input_file);
-  fseek(input_file, 0, SEEK_SET);
-  assembler->input_file.text = (char*)malloc(assembler->input_file.size + 2);
-  fread(assembler->input_file.text, 1, assembler->input_file.size, input_file);
-  assembler->input_file.text[assembler->input_file.size] = '\n';
-  assembler->input_file.size ++;
-  assembler->input_file.text[assembler->input_file.size+1] = 0;
-  fclose(input_file);
-  for (size_t i = 0; i < assembler->input_file.size; i++){
-    if(assembler->input_file.text[i] == '\n') assembler->input_file.line_count++;
-  }
-  assembler->input_file.line_count++;
-
-  return 0;
 }
 //-----------------------------------------------------------------------------
 void help_command(const char *invoc_name){
