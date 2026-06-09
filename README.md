@@ -70,32 +70,32 @@ Everything that doesn't belong to instruction words will be parsed as an express
 **Branch Labels** have two properties: constant and undetermined. You can call future branches from previous lines, and undetermined labels are evaluated when the assembler parses them.
 ```
 // Determined labels - fixed values
-x[0]: y[x+1]: z[y+2]:
+.x[0]; .y[x+1]; .z[y+2]
 
 // Can reference labels before definition
-start[0x8000 :: start + 0x200]:
+.start[0x8000 :: 0x200]
   lda_i 0x42
   loop: sta x; adc 1; bcc loop
   jmp end
-end[0xff00 + loop]: hlt
+.end[0xff00 + loop]; hlt
 ```
 > **_NOTE:_** Determined labels can be any size of byte but undetermined labels fixed to machine specific byte size.
 
 **Namespaces & Scopes** isolate labels using curly braces '{}'. Code can reach upper levels but not lower ones. A named scope creates a namespace to make it accessible afterwards.
 ```
-zp{
-  x[0]: y[2]: z[4]:
-  stack[0x100]{ start: end[start+0x255]: }
+.zp{
+  .x[0]; .y[2]; .z[4];
+  .stack[0x100]{ .start; .end[start+0x255] }
 }
 
-start[0x8000]{ sta zp.x }
+.start[0x8000]{ sta zp.x }
 ```
 
 **Memory Restrictions** use range function to restrict code to specific memory locations. When you create a branch label with a range, the assembler will error if the limit is exceeded.
 ```
-zp[0::256]{ x: 0 .(50) }                    // Restrict to 256 bytes
-start[0x8000 :: start+0x400]:               // Range from 0x8000 to 0x8400
-subroutines[0x9000 :: 0xA000]: // Some code
+.zp[0::256]{ .x; 0 }                    // Restrict to 256 bytes
+.start[0x8000 :: start+0x400]               // Range from 0x8000 to 0x8400
+.subroutines[0x9000 :: 0xA000] // Some code
 ``` 
 ## Adding Instruction Sets
 You can add new functions and instructions with just using the same macro tools as you use your assembly code.
