@@ -27,7 +27,7 @@ typedef struct scope{
 }scope_t;
 
 typedef struct lines{
-  enum line_type {EXPR, SCOPE} type;
+  enum line_type {EXPR, BRANCH, SCOPE} type;
   void* line;
   struct lines* next; 
 }lines_t;
@@ -35,5 +35,8 @@ typedef struct lines{
 int parse_expression(token_t* tokens, expr_node_t* expr);
 int parse_scope(token_t* tokens, scope_t* scope);
 int parse_line(token_t* tokens, lines_t* lines);
+void print_expression(expr_node_t* expr);
+void print_scope(scope_t* scope);
+void print_line(lines_t* lines);
 
 #endif

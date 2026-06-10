@@ -81,10 +81,10 @@ int main(int argc, char *argv[]){
     }
   }
   
-  // for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
-  //   print_single_token(&assembler.tokens[i]);
-  //   printf("\n");
-  // }
+  for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
+    print_single_token(&assembler.tokens[i]);
+    printf("\n");
+  }
   
 
   exit_assembler:

@@ -250,7 +250,7 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
         free(include_file->name);
         if(!name){
           print_error_loc(parent_token);
-          printf("[ERROR] Include file can not found any in paths");
+          printf("[ERROR] Include file can not found any in paths\n");
           return -1;
         }
         include_file->name = name;
@@ -294,10 +294,10 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
       for(size_t i = 0; macros[i].name.text_size != 0; i++){
         if(macros[i].name.text_size == token_reader_peek(reader, 0)->text_size && 
           memcmp(macros[i].name.text, token_reader_peek(reader, 0)->text, macros[i].name.text_size) == 0){
-          if(token_reader_peek(reader, 0)->line > macros[i].name.line){
+          // if(token_reader_peek(reader, 0)->line > macros[i].name.line){
             found = 1;
             found_macro = &macros[i];
-          }
+          // }
           break;
         }
       }
