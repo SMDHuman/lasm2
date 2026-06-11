@@ -304,6 +304,7 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
       if(found){
         size_t arg_count = token_reader_count_until(reader, COMMA, NEWLINE);
         if(token_reader_peek(reader, 1)->id != NEWLINE) arg_count += 1;
+        if(token_reader_peek(reader, 1)->id == COMMA) arg_count = 0;
         // Check if the argument counts are matching
         if(found_macro->args_size != arg_count){
           print_error_loc(token_reader_peek(reader, 0));
