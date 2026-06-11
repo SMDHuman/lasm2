@@ -6,6 +6,7 @@
 #define LASM2_PARSER_h
 
 #include "lasm2_tokenizer.h"
+#include "lasm2_tokenreader.h"
 
 typedef struct expr_node{
   token_t* token;
@@ -27,12 +28,12 @@ typedef struct scope{
 }scope_t;
 
 typedef struct lines{
-  enum line_type {EXPR, BRANCH, SCOPE} type;
+  enum line_type {EMPTY, EXPR, BRANCH, SCOPE} type;
   void* line;
   struct lines* next; 
 }lines_t;
 
-int parse_expression(token_t* tokens, expr_node_t* expr);
+int parse_expression(token_reader_t* reader, expr_node_t* root_expr);
 int parse_scope(token_t* tokens, scope_t* scope);
 int parse_line(token_t* tokens, lines_t* lines);
 void print_expression(expr_node_t* expr);

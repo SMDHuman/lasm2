@@ -143,5 +143,6 @@ size_t token_reader_get_index(token_reader_t *reader){
 }
 //-----------------------------------------------------------------------------
 uint8_t token_reader_EOF(token_reader_t *reader){
-  return reader->index >= reader->size;
+  if(token_reader_peek(reader, 0)->id == EOT || reader->index >= reader->size) return 1;
+  return 0;
 }

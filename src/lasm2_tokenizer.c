@@ -39,7 +39,7 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 	hh_darray_t *tokens_array = (hh_darray_t*)malloc(sizeof(hh_darray_t));
 	hh_darray_init(tokens_array, sizeof(token_t));
 	uint32_t line = 1, col = 0;
-	uint8_t comment_counter = 0;
+	uint8_t ignore_comment = 0;
 	//size_t i = 0;
 	char *file_text = file->text - 1; 
 	size_t iEOF = file->size + (size_t)file->text;
@@ -59,10 +59,10 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 			col = 1;
 		}
 		// Ignore comments
-		if(file_text[0] == '\n' && comment_counter == 2) {comment_counter = 0; }
-		if(file_text[0] != '\n' && comment_counter == 2) {col++; continue;}
-		if(file_text[0] == '/' && comment_counter == 0) {comment_counter = 1; col++; continue;}
-		if(file_text[0] == '/' && comment_counter == 1) {comment_counter = 2; col++;continue;}
+		if(file_text[0] == '\n' && ignore_comment) ignore_comment = 0;
+		if(file_text[0] != '\n' && ignore_comment) {col++; continue;}
+		if(file_text[0] == '/' && file_text[1] == '/') {ignore_comment = 1; col++;continue;}
+		if(file_text[0] != '/') ignore_comment = 0;
 		//=================================
 		// Check chars
 		if(file_text[0] == '<'){
@@ -105,6 +105,18 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 						}
 					}
 
+		if(file_text[0] == '='){
+				if(file_text[1] == '='){
+					token.id = EQUAL;
+					token.text = file_text;
+					token.text_size = 2;
+				}
+				else{
+					token.id = ASSIGN;
+					token.text = file_text;
+					token.text_size = 1;
+				}
+			}
 		if(file_text[0] == '(') {token.id=RBRAC_O; token.text = file_text; token.text_size = 1;}
 		if(file_text[0] == ')') {token.id=RBRAC_C; token.text = file_text; token.text_size = 1;}
 		if(file_text[0] == '[') {token.id=SBRAC_O; token.text = file_text; token.text_size = 1;}
@@ -144,7 +156,17 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 		if(file_text[0] == '|') {token.id=BITW_OR; token.text = file_text; token.text_size = 1;}
 		if(file_text[0] == '^') {token.id=BITW_XOR; token.text = file_text; token.text_size = 1;}
 		if(file_text[0] == '?') {token.id=QUEST; token.text = file_text; token.text_size = 1;}
-		if(file_text[0] == '!') {token.id=EXCLA; token.text = file_text; token.text_size = 1;}
+		if(file_text[0] == '!') {
+						if(file_text[1] == '='){
+							token.id = NOTEQUAL;
+							token.text = file_text;
+							token.text_size = 2;
+						}else{
+							token.id = EXCLA;
+							token.text = file_text;
+							token.text_size = 1;
+						}
+					}
 		if(file_text[0] == '.') {token.id=DOT; token.text = file_text; token.text_size = 1;}
 		if(file_text[0] == ',') {token.id=COMMA; token.text = file_text; token.text_size = 1;}
 		if(file_text[0] == '\n' || file_text[0] == ';'){
@@ -339,10 +361,13 @@ const char* token_id_to_string(TOKEN_ID id){
 		case COMMA: return "COMMA";
 		case RANGE: return "RANGE";
 		case DOLLAR: return "DOLLAR";
+		case EQUAL: return "EQUAL";
+		case NOTEQUAL: return "NOTEQUAL";
 		case SMALLER: return "SMALLER";
 		case GREATER: return "GREATER";
 		case EQ_SMALLER: return "EQ_SMALLER";
 		case EQ_GREATER: return "EQ_GREATER";
+		case ASSIGN: return "ASSIGN";
 		default: return "UNKNOWN";
 	}
 }

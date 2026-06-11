@@ -49,10 +49,13 @@ typedef enum{
 	COMMA,
 	RANGE,
 	DOLLAR,
+	EQUAL,
+	NOTEQUAL,
 	SMALLER,
 	GREATER,
 	EQ_SMALLER,
 	EQ_GREATER,
+	ASSIGN,
 }TOKEN_ID;
 
 typedef struct{

@@ -1,10 +1,11 @@
+#include <time.h>
 #define HH_ARGPARSE_IMPLEMENTATION
 #include "hh_argparse.h"
 #define HH_DARRAY_IMPLEMENTATION
 #include "hh_darray.h"
 #include "lasm2_tokenizer.h"
 #include "lasm2_macro.h"
-#include <time.h>
+#include "lasm2_parser.h"
 
 typedef struct {
   lasm_file_t input_file;
@@ -67,6 +68,7 @@ int main(int argc, char *argv[]){
     goto exit_assembler;
   }
   
+  printf("[INFO] Applying macros\n");
   // Make multiple passes to slice macros
   for (int i = 0; i < 16; i++){
     // Parse macros
@@ -80,11 +82,17 @@ int main(int argc, char *argv[]){
       goto exit_assembler;
     }
   }
+
+  lines_t lines;
+  printf("[INFO] Parsing\n");
+  parse_line(assembler.tokens, &lines);
+  printf("[INFO] Lines parsed\n");
+  print_line(&lines);
   
-  for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
-    print_single_token(&assembler.tokens[i]);
-    printf("\n");
-  }
+  // for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
+  //   print_single_token(&assembler.tokens[i]);
+  //   printf("\n");
+  // }
   
 
   exit_assembler:

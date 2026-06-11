@@ -1,14 +1,12 @@
-//< > ;  
-//:: >> << 
-
-// Different number formats and expressions
-123; 0xfe; 0b01011
-3 + (2 - 3) * (0x12 << 2) / 3
-"Hello World!"
-
-// Manipulate values with special operations
-"text with words"[2]  // Isolates character 'x' by index
-"Hello Code"[3:5]     // Isolates character 'lo' by range of indexes
-0xfff $4              // Ensure value takes 4 bytes of space
-3 + (2$32) - 1        // This is equal to '4' but occupies 32 bytes. Size of bytes inherits though evaluation
-$(2$32)               // Gives the size of the value
+5 + 4 * 3 * 2- 2 / 5;
+4-3*4+(2+3);
+85[3] + "hello"[5*(4-3)]
+(4 == 3) & 0xf$2
+!8 - !7 + $54 * (2$3)
+//    +             -
+//   / \           / \  
+//  5   *         +   2               
+//     / \       / \      
+//    4   3     5   *     
+//                 / \
+//                4   3
