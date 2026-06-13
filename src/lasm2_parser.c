@@ -7,23 +7,21 @@
 #include "lasm2_tokenreader.h"
 #include "utils.h"
 
-static int token_prc(token_t *token);
-static expr_node_t* parse_expression_right(token_reader_t* reader, int min_prc);
+static float token_prc(token_t *token);
+static expr_node_t* parse_expression_right(token_reader_t* reader, float min_prc);
 
 //-----------------------------------------------------------------------------
 int parse_expression(token_reader_t* reader, expr_node_t* root_expr){
-  int prev_precedence = 0;
-  
-  expr_node_t* buffer_expr = parse_expression_right(reader, 1);
+  expr_node_t* buffer_expr = parse_expression_right(reader, 1.);
   memcpy(root_expr, buffer_expr, sizeof(expr_node_t));
   while(1){
     if(token_reader_EOF(reader)) break;
     if(token_reader_peek(reader, 0)->id == NEWLINE) break;
-    if(token_reader_peek(reader, 0)->id == SBRAC_C) break;
-    if(token_reader_peek(reader, 0)->id == RBRAC_C) break;
+    if(token_reader_peek(reader, 0)->id == SBRAC_C) {token_reader_next(reader, 1); break;};
+    if(token_reader_peek(reader, 0)->id == RBRAC_C) {token_reader_next(reader, 1); break;}
     if(token_prc(token_reader_peek(reader, 0)) <= 0) break;
 
-    buffer_expr = parse_expression_right(reader, 1);
+    buffer_expr = parse_expression_right(reader, 1.);
     buffer_expr->left = NEW(expr_node_t, 1);
     memcpy(buffer_expr->left, root_expr, sizeof(expr_node_t));
     memcpy(root_expr, buffer_expr, sizeof(expr_node_t));
@@ -34,7 +32,8 @@ int parse_expression(token_reader_t* reader, expr_node_t* root_expr){
   return 0;
 }
 
-static expr_node_t* parse_expression_right(token_reader_t* reader, int min_prc){
+static expr_node_t* parse_expression_right(token_reader_t* reader, float min_prc){
+  // print_single_token(token_reader_peek(reader, 0));printf("\n");
   if(token_reader_EOF(reader)) return NULL;
   if(token_reader_peek(reader, 0)->id == NEWLINE) return NULL;
   expr_node_t* new_expr = NEW(expr_node_t, 1);
@@ -48,12 +47,12 @@ static expr_node_t* parse_expression_right(token_reader_t* reader, int min_prc){
     new_expr->token = token_reader_peek(reader, 0);
     token_reader_next(reader, 1);
   }
+  //...
   if(token_reader_peek(reader, 0)->id == RBRAC_O){
     token_reader_next(reader, 1);
     parse_expression(reader, new_expr);
-    return new_expr;
   }
-  
+  //...
   if(token_reader_peek(reader, 0)->id == SBRAC_O){
     token_t* index_token = token_reader_next(reader, 1);
     expr_node_t* new_op_expr= NEW(expr_node_t, 1);
@@ -61,13 +60,16 @@ static expr_node_t* parse_expression_right(token_reader_t* reader, int min_prc){
     new_op_expr->token = index_token;
     new_op_expr->right = NEW(expr_node_t, 1);
     parse_expression(reader, new_op_expr->right);
-    return new_op_expr;
+    new_expr = new_op_expr;
   }
-
   // EXIT ON ']' ')'
   if(token_reader_peek(reader, 0)->id == RBRAC_C || token_reader_peek(reader, 0)->id == SBRAC_C) {
-    token_reader_next(reader, 1);
     return new_expr;
+  }
+  if(min_prc > 0 && token_prc(token_reader_peek(reader, 0)) > 0 && new_expr->token == NULL){
+    new_expr->token = token_reader_next(reader, 1);
+    new_expr->left = parse_expression_right(reader, 99999);
+    new_expr->right = 0;
   }
   // print_single_token(token_reader_peek(reader, 0));printf("\n");
   // printf("prc, min_prc: %d, %d\n", token_prc(token_reader_peek(reader, 0)),  min_prc);
@@ -113,11 +115,12 @@ int parse_line(token_t* tokens, lines_t* lines){
       current_line->line = 0;
     }
   }
+  return 0;
 }
 
 //-----------------------------------------------------------------------------
-static int token_prc(token_t *token){
-  int precedence = 1;
+static float token_prc(token_t *token){
+  float precedence = 1;
   if(token->id == SMALLER || token->id == EQ_SMALLER) return precedence;
   if(token->id == GREATER || token->id == EQ_GREATER) return precedence;
   if(token->id == EQUAL || token->id == NOTEQUAL) return precedence;
@@ -144,7 +147,7 @@ void print_expression(expr_node_t* expr){
   }
   
   
-  if(expr->left && expr->right) printf("(");
+  if(expr->left || expr->right) printf("(");
   if(expr->token != NULL){
     // Bunu yap
     char text[expr->token->text_size + 1];
@@ -159,7 +162,7 @@ void print_expression(expr_node_t* expr){
   if(expr->right != NULL){
     print_expression(expr->right);
   }
-  if(expr->left && expr->right) printf(")");
+  if(expr->left || expr->right) printf(")");
 }
 //-----------------------------------------------------------------------------
 void print_scope(scope_t* scope){
