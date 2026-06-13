@@ -85,9 +85,12 @@ int main(int argc, char *argv[]){
 
   lines_t lines;
   printf("[INFO] Parsing\n");
-  parse_line(assembler.tokens, &lines);
+  exit_code = lasm2_parser(assembler.tokens, &lines);
+  if(exit_code != 0){
+    goto exit_assembler;
+  }
   printf("[INFO] Lines parsed\n");
-  print_line(&lines);
+  print_line(&lines, 1);
   
   // for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
   //   print_single_token(&assembler.tokens[i]);

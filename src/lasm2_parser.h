@@ -20,24 +20,24 @@ typedef struct{
   expr_node_t* end_address;
 }branch_t;
 
-typedef struct scope{
-  branch_t* header;
-  struct scope* parent;
-  struct scope* childrens;
-  branch_t* branches; // list
-}scope_t;
-
 typedef struct lines{
-  enum line_type {EMPTY, EXPR, BRANCH, SCOPE} type;
+  enum line_type {EMPTY, EXPR, SCOPE} type;
   void* line;
   struct lines* next; 
 }lines_t;
 
-int parse_expression(token_reader_t* reader, expr_node_t* root_expr);
-int parse_scope(token_t* tokens, scope_t* scope);
-int parse_line(token_t* tokens, lines_t* lines);
-void print_expression(expr_node_t* expr);
-void print_scope(scope_t* scope);
-void print_line(lines_t* lines);
+typedef struct scope{
+  branch_t* header;
+  struct scope* parent;
+  lines_t* lines;
+}scope_t;
+
+static int parse_expression(token_reader_t* reader, expr_node_t* root_expr);
+static int parse_scope(token_reader_t* reader, scope_t* scope);
+static int parse_line(token_reader_t* reader, lines_t* lines, scope_t* parent);
+int lasm2_parser(token_t* tokens, lines_t* lines);
+void print_expression(expr_node_t* expr, int indent);
+void print_scope(scope_t* scope, int indent);
+void print_line(lines_t* lines, int indent);
 
 #endif

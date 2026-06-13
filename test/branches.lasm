@@ -1,14 +1,28 @@
-zp{
-  x[0]: y[2]: z[4]:
-  stack[0x100]{ start: end[start+0x255]: }
+2+ 1
+
+.cibici
+.bibidi[5]
+.hihihhi[5-4]
+.cipcip[7::5+3]
+
+.taktak{
+  5 - 5;
+  hey; how;
 }
 
-// Determined labels - fixed values
-x[0]: y[x+1]: z[y+2]:
+.tuktak[4]{
+  5 - 5;
+  hey; how;
 
-// Can reference labels before definition
-start[0x8000 :: start + 0x200]:
-  x; y; z; zp.x; zp.y; zp.z; zp.stack.start; zp.stack.end
-end[0xff00 + loop]: 
-  0xfff
+  .taktuk[4::223-2]{
+    6 - 6;
+    heww; hoyyy;
+  }
+}
 
+
+{
+  hey
+  .how
+  hoo
+}

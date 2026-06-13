@@ -11,7 +11,7 @@ static float token_prc(token_t *token);
 static expr_node_t* parse_expression_right(token_reader_t* reader, float min_prc);
 
 //-----------------------------------------------------------------------------
-int parse_expression(token_reader_t* reader, expr_node_t* root_expr){
+static int parse_expression(token_reader_t* reader, expr_node_t* root_expr){
   expr_node_t* buffer_expr = parse_expression_right(reader, 1.);
   memcpy(root_expr, buffer_expr, sizeof(expr_node_t));
   while(1){
@@ -62,14 +62,15 @@ static expr_node_t* parse_expression_right(token_reader_t* reader, float min_prc
     parse_expression(reader, new_op_expr->right);
     new_expr = new_op_expr;
   }
-  // EXIT ON ']' ')'
-  if(token_reader_peek(reader, 0)->id == RBRAC_C || token_reader_peek(reader, 0)->id == SBRAC_C) {
-    return new_expr;
-  }
-  if(min_prc > 0 && token_prc(token_reader_peek(reader, 0)) > 0 && new_expr->token == NULL){
+  // Check for prefixes
+  if(min_prc > 1 && token_prc(token_reader_peek(reader, 0)) > 0 && new_expr->token == NULL){
     new_expr->token = token_reader_next(reader, 1);
     new_expr->left = parse_expression_right(reader, 99999);
     new_expr->right = 0;
+  }
+  // EXIT ON ']' ')'
+  if(token_reader_peek(reader, 0)->id == RBRAC_C || token_reader_peek(reader, 0)->id == SBRAC_C) {
+    return new_expr;
   }
   // print_single_token(token_reader_peek(reader, 0));printf("\n");
   // printf("prc, min_prc: %d, %d\n", token_prc(token_reader_peek(reader, 0)),  min_prc);
@@ -85,21 +86,80 @@ static expr_node_t* parse_expression_right(token_reader_t* reader, float min_prc
 }
 
 //-----------------------------------------------------------------------------
-int parse_scope(token_t* tokens, scope_t* scope){
+static int parse_scope(token_reader_t* reader, scope_t* scope){
+  if(token_reader_peek(reader, 0)->id == DOT){
+    token_reader_next(reader, 1);
+    if(!token_reader_expect(reader, WORD, 0)) return -1;
+    branch_t* branch = NEW(branch_t, 1);
+    branch->start_address = NULL; branch->end_address = NULL;
+    scope->header = branch;
+    branch->name = token_reader_next(reader, 1);
+    //...
+    if(token_reader_peek(reader, 0)->id == SBRAC_O){
+      branch->start_address = NEW(expr_node_t, 1);
+      token_reader_next(reader, 1);
+      int res = parse_expression(reader, branch->start_address);
+      if(res) return res;
+      if(token_reader_peek(reader, 0)->id == RANGE){
+        token_reader_next(reader, 1);
+        branch->end_address = NEW(expr_node_t, 1);
+        int res = parse_expression(reader, branch->end_address);
+        if(res) return res;
+      }
+    }
+  }else{
+    scope->header = NULL;
+  }
+  //...
+  token_reader_skip_until_not(reader, NEWLINE);
+  if(token_reader_peek(reader, 0)->id == CBRAC_O){
+    token_reader_next(reader, 1);
+    scope->lines = NEW(lines_t, 1);
+    int res = parse_line(reader, scope->lines, scope);
+    if(res) return res;
+  }
   return 0;
 }
 
-int parse_line(token_t* tokens, lines_t* lines){
+int lasm2_parser(token_t* tokens, lines_t* lines){
   token_reader_t* reader = new_token_reader(tokens);
+  int res = parse_line(reader, lines, NULL);
+  free_token_reader(reader);
+  return res;
+}
+
+static int parse_line(token_reader_t* reader, lines_t* lines, scope_t* parent){
+  if(lines == NULL) return -1;
+  lines->line = NULL;
+  lines->next = NULL;
+  lines->type = EMPTY;
   lines_t* root_line = lines;
   lines_t* current_line = root_line;
   while(!token_reader_EOF(reader)){
+  // print_single_token(token_reader_peek(reader, 0));printf("\n");
+
     // Parse as scope
-    if(token_reader_peek(reader, 0)->id == DOT || token_reader_peek(reader, 0)->id == CBRAC_O){
+    if(token_reader_peek(reader, 0)->id == NEWLINE){
       token_reader_next(reader, 1);
     }
-    else if(token_reader_peek(reader, 0)->id == NEWLINE){
+    else if(token_reader_peek(reader, 0)->id == CBRAC_C){
       token_reader_next(reader, 1);
+      return 0;
+    }
+    else if(token_reader_peek(reader, 0)->id == DOT || token_reader_peek(reader, 0)->id == CBRAC_O){
+      scope_t* scope = NEW(scope_t, 1);
+      scope->parent = parent;
+      scope->lines = NULL;
+      scope->header = NULL;
+      int res = parse_scope(reader, scope);
+      if(res) return res;
+      current_line->type = SCOPE;
+      current_line->line = scope;
+      current_line->next = NEW(lines_t, 1);
+      current_line = current_line->next;
+      current_line->type = EMPTY;
+      current_line->next = 0;
+      current_line->line = 0;
     }
     // Parse as expression
     else{
@@ -140,7 +200,7 @@ static float token_prc(token_t *token){
   return 0; // Default precedence for other tokens
 }
 //-----------------------------------------------------------------------------
-void print_expression(expr_node_t* expr){
+void print_expression(expr_node_t* expr, int indent){
   if(expr == NULL){
     printf("NULL");
     return;
@@ -149,114 +209,87 @@ void print_expression(expr_node_t* expr){
   
   if(expr->left || expr->right) printf("(");
   if(expr->token != NULL){
-    // Bunu yap
     char text[expr->token->text_size + 1];
     memcpy(text, expr->token->text, expr->token->text_size);
     text[expr->token->text_size] = 0;
     printf(" %s ", text);
   }
   if(expr->left != NULL){
-    print_expression(expr->left);
+    print_expression(expr->left, indent);
   }
   
   if(expr->right != NULL){
-    print_expression(expr->right);
+    print_expression(expr->right, indent);
   }
   if(expr->left || expr->right) printf(")");
 }
 //-----------------------------------------------------------------------------
-void print_scope(scope_t* scope){
+void print_scope(scope_t* scope, int indent){
   if(scope == NULL){
     printf("NULL scope\n");
     return;
   }
   
+  for(int i = 0; i < indent; i++) printf("  ");
   printf("Scope: ");
   if(scope->header != NULL){
     printf("name=");
     if(scope->header->name != NULL){
-      print_single_token(scope->header->name);
+        token_t* token = scope->header->name;
+        char text[token->text_size + 1];
+        memcpy(text, token->text, token->text_size);
+        text[token->text_size] = 0;
+        printf(" %s ", text);
     }
-    printf(" start=");
-    print_expression(scope->header->start_address);
-    printf(" end=");
-    print_expression(scope->header->end_address);
+    printf(", start=");
+    print_expression(scope->header->start_address, indent);
+    printf(", end=");
+    print_expression(scope->header->end_address, indent);
+  }
+  if(scope->parent != NULL){
+    printf(", Parent name=");
+    if(scope->parent->header != NULL){
+      if(scope->parent->header->name != NULL){
+        token_t* token = scope->parent->header->name;
+        char text[token->text_size + 1];
+        memcpy(text, token->text, token->text_size);
+        text[token->text_size] = 0;
+        printf(" %s ", text);
+      }
+    }
   }
   printf("\n");
   
-  if(scope->branches != NULL){
-    printf("  Branches:\n");
-    branch_t* current_branch = scope->branches;
-    while(current_branch != NULL){
-      printf("    Branch: name=");
-      if(current_branch->name != NULL){
-        print_single_token(current_branch->name);
-      }
-      printf(" start=");
-      print_expression(current_branch->start_address);
-      printf(" end=");
-      print_expression(current_branch->end_address);
-      printf("\n");
-      current_branch = current_branch + 1; // Assuming array-like structure
-    }
-  }
-  
-  if(scope->childrens != NULL){
-    printf("  Child scopes:\n");
-    scope_t* current_child = scope->childrens;
-    while(current_child != NULL){
-      printf("    ");
-      print_scope(current_child);
-      current_child = current_child->childrens; // Navigate to next sibling
-    }
+  if(scope->lines != NULL){
+    print_line(scope->lines, indent + 1);
   }
 }
 //-----------------------------------------------------------------------------
-void print_line(lines_t* lines){
+void print_line(lines_t* lines, int indent){
   if(lines == NULL){
     printf("NULL line\n");
     return;
   }
   
-  lines_t* current = lines;
-  while(current != NULL){
-    printf("Line: ");
-    
-    switch(current->type){
-      case EXPR:
-        printf("EXPR:  ");
-        print_expression((expr_node_t*)current->line);
-        break;
-      case BRANCH:
-        printf("BRANCH:  ");
-        {
-          branch_t* branch = (branch_t*)current->line;
-          if(branch != NULL){
-            printf("name=");
-            if(branch->name != NULL){
-              print_single_token(branch->name);
-            }
-            printf(" start=");
-            print_expression(branch->start_address);
-            printf(" end=");
-            print_expression(branch->end_address);
-          }
-        }
-        break;
-      case SCOPE:
-        printf("SCOPE\n");
-        print_scope((scope_t*)current->line);
-        printf("End SCOPE\n");
-        break;
-      case EMPTY:
-        printf("EMPTY\n");
-        break;
-      default:
-        printf("UNKNOWN TYPE");
-        break;
-    }
-    
+  for(int i = 0; i < indent; i++) printf("  ");
+  printf("Line: ");
+  
+  if(lines->type == EMPTY){
+    printf("EMPTY\n");
+    return;
+  } else if(lines->type == EXPR){
+    printf("EXPR:  ");
+    print_expression((expr_node_t*)lines->line, indent);
     printf("\n");
-    current = current->next;
+  } else if(lines->type == SCOPE){
+    printf("SCOPE\n");
+    print_scope((scope_t*)lines->line, indent + 1);
+    for(int i = 0; i < indent; i++) printf("  ");
+    printf("End SCOPE\n");
+  } else {
+    printf("UNKNOWN TYPE\n");
+  }
+  if(lines->next){
+    print_line(lines->next, indent);
   }
 }
