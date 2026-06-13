@@ -184,7 +184,7 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 			token.id = NUMBER;
 			token.text = file_text;
 			token.text_size = 1;
-			while(is_inside(file_text[token.text_size], "0123456789abcdefxb") && file_text+token.text_size < (char*)iEOF){
+			while(is_inside(file_text[token.text_size], "0123456789abcdefxb._") && file_text+token.text_size < (char*)iEOF){
 				token.text_size++;
 			}
 		}
@@ -228,7 +228,7 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 			token.id = WORD;
 			token.text = file_text;
 			token.text_size = 1;
-			while(is_alphanum(file_text[token.text_size]) || file_text[token.text_size] == '_'){
+			while(is_alphanum(file_text[token.text_size]) || file_text[token.text_size] == '_'  || file_text[token.text_size] == '.'){
 				token.text_size++;
 			}
 		}
