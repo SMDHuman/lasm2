@@ -6,6 +6,7 @@
 #include "lasm2_tokenizer.h"
 #include "lasm2_tokenreader.h"
 #include "lasm2_macro.h"
+#include "utils.h"
 
 #include <dirent.h>
 
@@ -58,7 +59,7 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
         }
         // Make arguments local to macro
         if(m.args_size > 0){
-          token_t* local_args = (token_t*)malloc(sizeof(token_t)*(m.args_size+1));
+          token_t* local_args = NEW(token_t, m.args_size+1);
           memset(local_args, 0, sizeof(token_t)*(m.args_size+1));
           for(size_t i = 0; i < m.args_size; i++){
             local_args[i] = m.args[i*2];
@@ -85,12 +86,12 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
         m.content_size--;
         // Make content local to macro
         if(m.content_size > 0){
-          token_t* local_content = (token_t*)malloc(sizeof(token_t)*(m.content_size+1));
+          token_t* local_content = NEW(token_t, m.content_size+1);
           memset(local_content, 0, sizeof(token_t)*(m.content_size+1));
           for(size_t i = 0; i < m.content_size; i++){
             local_content[i] = m.content[i];
           }
-          m.args = local_content;
+          m.content = local_content;
         }
         //...
         //print_macro(&m);
@@ -209,11 +210,9 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
   *macro = macros;
   hh_darray_deinit(macros_array);
   free(macros_array);
+  free_token_reader(reader);
   return 0;
 }
-
-
-
 
 //-----------------------------------------------------------------------------
 int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t **regenerated_tokens, lasm_file_t **include_files, char **include_paths){
@@ -305,6 +304,7 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
         size_t arg_count = token_reader_count_until(reader, COMMA, NEWLINE);
         if(token_reader_peek(reader, 1)->id != NEWLINE) arg_count += 1;
         if(token_reader_peek(reader, 1)->id == COMMA) arg_count = 0;
+        if(found_macro->args_size == 0) arg_count = 0;
         // Check if the argument counts are matching
         if(found_macro->args_size != arg_count){
           print_error_loc(token_reader_peek(reader, 0));
@@ -438,4 +438,34 @@ void print_macro(macro_t *macro){
     print_single_token(&macro->content[i]);
     printf("\n");
   }
+}
+
+//-----------------------------------------------------------------------------
+void free_macro(macro_t* macro){
+  if(macro == NULL) return;
+  
+  // Free args array if allocated
+  if(macro->args != NULL){
+    free(macro->args);
+  }
+  
+  // Free content array if allocated
+  if(macro->content != NULL){
+    free(macro->content);
+  }
+  
+  // Don't free macro->name since it's not allocated (it's a copy of a token)
+}
+
+//-----------------------------------------------------------------------------
+void free_macros(macro_t* macros){
+  if(macros == NULL) return;
+  
+  // Free each macro in the null-terminated array
+  for(size_t i = 0; macros[i].content_size != 0; i++){
+    free_macro(&macros[i]);
+  }
+  
+  // Free the array itself
+  free(macros);
 }

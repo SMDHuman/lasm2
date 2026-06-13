@@ -6,6 +6,7 @@
 #include "lasm2_tokenizer.h"
 #include "lasm2_macro.h"
 #include "lasm2_parser.h"
+#include "utils.h"
 
 typedef struct {
   lasm_file_t input_file;
@@ -42,9 +43,22 @@ int main(int argc, char *argv[]){
   // Extract include paths
   assembler.include_paths = (char**)malloc(sizeof(char*)*2);
   char* last_slash = strchr(assembler.input_file.name, '/');
-  int dir_name_size = (int)(last_slash-assembler.input_file.name);
+  //...
+  int dir_name_size;
+  const char* dir_path;
+  if(last_slash == NULL){
+    // No path separator found, use current directory
+    dir_path = ".";
+    dir_name_size = 1;
+  } else {
+    dir_path = assembler.input_file.name;
+    dir_name_size = (int)(last_slash - assembler.input_file.name);
+  }
+  //...
   assembler.include_paths[0] = (char*)malloc(dir_name_size+1);
-  memcpy(assembler.include_paths[0], assembler.input_file.name, dir_name_size);
+  memcpy(assembler.include_paths[0], dir_path, dir_name_size);
+  assembler.include_paths[0][dir_name_size] = '\0';
+  assembler.include_paths[1] = NULL;
   printf("Input file directory: %s\n", assembler.include_paths[0]);
 
   //assembler.include_paths = hh_argparse_get_op_short_or_long(parser, 'i', "include");
@@ -83,14 +97,14 @@ int main(int argc, char *argv[]){
     }
   }
 
-  lines_t lines;
+  lines_t* lines = NEW(lines_t, 1);
   printf("[INFO] Parsing\n");
-  exit_code = lasm2_parser(assembler.tokens, &lines);
+  exit_code = lasm2_parser(assembler.tokens, lines);
   if(exit_code != 0){
     goto exit_assembler;
   }
   printf("[INFO] Lines parsed\n");
-  print_line(&lines, 1);
+  print_line(lines, 1);
   
   // for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
   //   print_single_token(&assembler.tokens[i]);
@@ -101,6 +115,8 @@ int main(int argc, char *argv[]){
   exit_assembler:
   // Deinitialize everything
   hh_argparse_deinit(parser);
+  //if(assembler.include_paths) free(assembler.include_paths);
+  if(assembler.macros) free_macros(assembler.macros);
   if(assembler.output_file) fclose(assembler.output_file);
   if(assembler.input_file.text) free(assembler.input_file.text);
   if(assembler.tokens) free(assembler.tokens);
@@ -111,9 +127,9 @@ int main(int argc, char *argv[]){
     printf("[ERROR] Assembling failed with code %d\n", exit_code);
   }else{
     printf("[INFO] Assembling completed successfully");
-    printf(" (%ld ms)\n", (end_time.tv_nsec - start_time.tv_nsec)/1000000);
+    printf(" (%ld ms)\n", (end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_nsec - start_time.tv_nsec) / 1000000);
   }
-
+  free_lines(lines);
   return exit_code;
 }
 //-----------------------------------------------------------------------------

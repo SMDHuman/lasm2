@@ -9,11 +9,15 @@
 
 static float token_prc(token_t *token);
 static expr_node_t* parse_expression_right(token_reader_t* reader, float min_prc);
+static int parse_expression(token_reader_t* reader, expr_node_t* root_expr);
+static int parse_scope(token_reader_t* reader, scope_t* scope);
+static int parse_line(token_reader_t* reader, lines_t* lines, scope_t* parent);
 
 //-----------------------------------------------------------------------------
 static int parse_expression(token_reader_t* reader, expr_node_t* root_expr){
   expr_node_t* buffer_expr = parse_expression_right(reader, 1.);
   memcpy(root_expr, buffer_expr, sizeof(expr_node_t));
+  free(buffer_expr);
   while(1){
     if(token_reader_EOF(reader)) break;
     if(token_reader_peek(reader, 0)->id == NEWLINE) break;
@@ -22,10 +26,12 @@ static int parse_expression(token_reader_t* reader, expr_node_t* root_expr){
     if(token_prc(token_reader_peek(reader, 0)) <= 0) break;
 
     buffer_expr = parse_expression_right(reader, 1.);
+    if(buffer_expr->left != NULL) free(buffer_expr->left);
     buffer_expr->left = NEW(expr_node_t, 1);
     memcpy(buffer_expr->left, root_expr, sizeof(expr_node_t));
     memcpy(root_expr, buffer_expr, sizeof(expr_node_t));
-
+    free(buffer_expr);
+    
   }
   // print_single_token(token_reader_peek(reader, 0));printf("\n");
 
@@ -181,6 +187,9 @@ static int parse_line(token_reader_t* reader, lines_t* lines, scope_t* parent){
 //-----------------------------------------------------------------------------
 static float token_prc(token_t *token){
   float precedence = 1;
+  if(token->id == COLON) return precedence;
+  if(token->id == QUEST) return precedence;
+  precedence++;
   if(token->id == SMALLER || token->id == EQ_SMALLER) return precedence;
   if(token->id == GREATER || token->id == EQ_GREATER) return precedence;
   if(token->id == EQUAL || token->id == NOTEQUAL) return precedence;
@@ -205,8 +214,6 @@ void print_expression(expr_node_t* expr, int indent){
     printf("NULL");
     return;
   }
-  
-  
   if(expr->left || expr->right) printf("(");
   if(expr->token != NULL){
     char text[expr->token->text_size + 1];
@@ -291,5 +298,82 @@ void print_line(lines_t* lines, int indent){
   }
   if(lines->next){
     print_line(lines->next, indent);
+  }
+}
+
+//-----------------------------------------------------------------------------
+void free_expr_node(expr_node_t* expr){
+  if(expr == NULL) return;
+  
+  // Recursively free left and right subtrees
+  if(expr->left != NULL){
+    free_expr_node(expr->left);
+  }
+  if(expr->right != NULL){
+    free_expr_node(expr->right);
+  }
+  
+  // Free the node itself
+  free(expr);
+}
+
+//-----------------------------------------------------------------------------
+void free_branch(branch_t* branch){
+  if(branch == NULL) return;
+  
+  // Free start and end address expressions
+  if(branch->start_address != NULL){
+    free_expr_node(branch->start_address);
+  }
+  if(branch->end_address != NULL){
+    free_expr_node(branch->end_address);
+  }
+  
+  // Free the branch itself
+  free(branch);
+}
+
+//-----------------------------------------------------------------------------
+void free_scope(scope_t* scope){
+  if(scope == NULL) return;
+  
+  // Free header (branch)
+  if(scope->header != NULL){
+    free_branch(scope->header);
+  }
+  
+  // Free lines within scope
+  if(scope->lines != NULL){
+    free_lines(scope->lines);
+  }
+  
+  // Don't free parent - it's managed elsewhere
+  
+  // Free the scope itself
+  free(scope);
+}
+
+//-----------------------------------------------------------------------------
+void free_lines(lines_t* lines){
+  if(lines == NULL) return;
+  
+  // Save next pointer before freeing current
+  lines_t* next = lines->next;
+  
+  // Free the current line based on its type
+  if(lines->type == EXPR){
+    free_expr_node((expr_node_t*)lines->line);
+  }
+  else if(lines->type == SCOPE){
+    free_scope((scope_t*)lines->line);
+  }
+  // EMPTY type has no allocation to free
+  
+  // Free the lines node itself
+  free(lines);
+  
+  // Recursively free the rest of the linked list
+  if(next != NULL){
+    free_lines(next);
   }
 }

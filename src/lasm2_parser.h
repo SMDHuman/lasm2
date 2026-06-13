@@ -32,12 +32,14 @@ typedef struct scope{
   lines_t* lines;
 }scope_t;
 
-static int parse_expression(token_reader_t* reader, expr_node_t* root_expr);
-static int parse_scope(token_reader_t* reader, scope_t* scope);
-static int parse_line(token_reader_t* reader, lines_t* lines, scope_t* parent);
 int lasm2_parser(token_t* tokens, lines_t* lines);
 void print_expression(expr_node_t* expr, int indent);
 void print_scope(scope_t* scope, int indent);
 void print_line(lines_t* lines, int indent);
+
+void free_expr_node(expr_node_t* expr);
+void free_branch(branch_t* branch);
+void free_scope(scope_t* scope);
+void free_lines(lines_t* lines);
 
 #endif
