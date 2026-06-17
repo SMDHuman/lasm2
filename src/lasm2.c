@@ -110,13 +110,17 @@ int main(int argc, char *argv[]){
   //   printf("\n");
   // }
   
+  
+  printf("[INFO] Assembling\n");
   assembler.output_file = fopen(output_filename, "w");
   exit_code = assemble_lines(assembler.lines, assembler.output_file);
   if(exit_code != 0){
     goto exit_assembler;
   }
+  printf("[INFO] Lines assembled\n");
 
   exit_assembler:
+  printf("Exiting...\n");
   // Deinitialize everything
   hh_argparse_deinit(parser);
   //if(assembler.include_paths) free(assembler.include_paths);

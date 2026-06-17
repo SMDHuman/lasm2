@@ -15,7 +15,7 @@ static int parse_line(token_reader_t* reader, lines_t* lines, scope_t* parent);
 
 //-----------------------------------------------------------------------------
 static int parse_expression(token_reader_t* reader, expr_node_t* root_expr){
-  expr_node_t* buffer_expr = parse_expression_right(reader, 1.);
+  expr_node_t* buffer_expr = parse_expression_right(reader, 2.);
   memcpy(root_expr, buffer_expr, sizeof(expr_node_t));
   free(buffer_expr);
   while(1){
@@ -34,7 +34,6 @@ static int parse_expression(token_reader_t* reader, expr_node_t* root_expr){
     
   }
   // print_single_token(token_reader_peek(reader, 0));printf("\n");
-
   return 0;
 }
 
@@ -186,7 +185,7 @@ static int parse_line(token_reader_t* reader, lines_t* lines, scope_t* parent){
 
 //-----------------------------------------------------------------------------
 static float token_prc(token_t *token){
-  float precedence = 1;
+  float precedence = 2;
   if(token->id == COLON) return precedence;
   if(token->id == QUEST) return precedence;
   precedence++;
@@ -214,7 +213,7 @@ void print_expression(expr_node_t* expr, int indent){
     printf("NULL");
     return;
   }
-  if(expr->left || expr->right) printf("(");
+  printf("(");
   if(expr->token != NULL){
     char text[expr->token->text_size + 1];
     memcpy(text, expr->token->text, expr->token->text_size);
@@ -228,7 +227,7 @@ void print_expression(expr_node_t* expr, int indent){
   if(expr->right != NULL){
     print_expression(expr->right, indent);
   }
-  if(expr->left || expr->right) printf(")");
+  printf(")");
 }
 //-----------------------------------------------------------------------------
 void print_scope(scope_t* scope, int indent){

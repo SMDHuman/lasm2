@@ -89,10 +89,106 @@ int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
         }
       }
     }break;
+    case EXCLA:{
+      if(left_val != NULL && right_val == NULL){
+        hh_bigint_copy(result, left_val);
+        for(size_t i = 0; i < result->size; i++){
+          result->data[i] = ~result->data[i];
+        }
+      }
+    }break;
+    case BITW_AND:{
+      if(left_val && right_val){
+        if(left_val->size > right_val->size) hh_bigint_resize(right_val, left_val->size);
+        if(left_val->size < right_val->size) hh_bigint_resize(left_val, right_val->size);
+        hh_bigint_copy(result, left_val);
+        for(size_t i = 0; i < result->size; i++){
+          result->data[i] = result->data[i] & right_val->data[i];
+        }
+      }
+    }break;
+    case BITW_OR:{
+      if(left_val && right_val){
+        if(left_val->size > right_val->size) hh_bigint_resize(right_val, left_val->size);
+        if(left_val->size < right_val->size) hh_bigint_resize(left_val, right_val->size);
+        hh_bigint_copy(result, left_val);
+        for(size_t i = 0; i < result->size; i++){
+          result->data[i] = result->data[i] | right_val->data[i];
+        }
+      }
+    }break;
+    case BITW_XOR:{
+      if(left_val && right_val){
+        if(left_val->size > right_val->size) hh_bigint_resize(right_val, left_val->size);
+        if(left_val->size < right_val->size) hh_bigint_resize(left_val, right_val->size);
+        hh_bigint_copy(result, left_val);
+        for(size_t i = 0; i < result->size; i++){
+          result->data[i] = result->data[i] ^ right_val->data[i];
+        }
+      }
+    }break;
+    case DOLLAR:{
+      if(left_val != NULL && right_val == NULL){
+        uint64_t size = left_val->size;
+        hh_bigint_set_uint64(result, size);
+        hh_bigint_normalize(result);
+      }
+      else if(left_val && right_val){
+        uint64_t size = hh_bigint_get_uint64(right_val);
+        hh_bigint_copy(result, left_val);
+        int res = (int)hh_bigint_resize(result, size);
+        if(res) return res;
+      }
+    }break;
     case EQUAL:{
       if(left_val && right_val){
         hh_bigint_resize(result, 1);
         result->data[0] = hh_bigint_is_equal(left_val, right_val);
+      }
+    }break;
+    case SMALLER:{
+      if(left_val && right_val){
+        hh_bigint_resize(result, 1);
+        result->data[0] = hh_bigint_is_smaller(left_val, right_val);
+      }
+    }break;
+    case GREATER:{
+      if(left_val && right_val){
+        hh_bigint_resize(result, 1);
+        result->data[0] = hh_bigint_is_bigger(left_val, right_val);
+      }
+    }break;
+    case EQ_SMALLER:{
+      if(left_val && right_val){
+        hh_bigint_resize(result, 1);
+        result->data[0] = !hh_bigint_is_bigger(left_val, right_val);
+      }
+    }break;
+    case EQ_GREATER:{
+      if(left_val && right_val){
+        hh_bigint_resize(result, 1);
+        result->data[0] = !hh_bigint_is_smaller(left_val, right_val);
+      }
+    }break;
+    case COLON:{
+      if(left_val==NULL || right_val==NULL){
+        print_error_loc(expr->token);
+        printf("Expecting expressions between colon ':'\n");
+      }
+    }break;
+    case QUEST:{
+      if(expr->right->token->id == COLON){
+        hh_bigint_t* zero = hh_bigint_new(0);
+        if(hh_bigint_is_equal(left_val, zero)){
+          int res = evaluate_expression(expr->right->right, result);
+          if(res) return res;
+        }else{
+          int res = evaluate_expression(expr->right->left, result);
+          if(res) return res;
+        }
+      }else{
+        print_error_loc(expr->token);
+        printf("Expecting colon ':' after the selector.\n");
       }
     }break;
     case STRING_DB:
@@ -105,8 +201,7 @@ int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
       int res = evaluate_token(expr->token, result);
       if(res) return res;
     }break;
-    default:
-    {
+    default:{
       printf("[WARNING] Unkown Operation '%s'\n", token_id_to_string(expr->token->id));
     }break;
   }
