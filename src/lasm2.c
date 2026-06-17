@@ -113,7 +113,7 @@ int main(int argc, char *argv[]){
   
   printf("[INFO] Assembling\n");
   assembler.output_file = fopen(output_filename, "w");
-  exit_code = assemble_lines(assembler.lines, assembler.output_file);
+  exit_code = lasm2_assemble_to_file(assembler.lines, assembler.output_file);
   if(exit_code != 0){
     goto exit_assembler;
   }

@@ -18,6 +18,7 @@ typedef struct{
   token_t* name;
   expr_node_t* start_address;
   expr_node_t* end_address;
+  uint64_t location;
 }branch_t;
 
 typedef struct lines{

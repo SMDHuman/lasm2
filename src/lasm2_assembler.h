@@ -7,6 +7,6 @@
 
 #include "lasm2_parser.h"
 
-int assemble_lines(lines_t* lines, FILE* out_file);
+int lasm2_assemble_to_file(lines_t* lines, FILE* out_file);
 
 #endif

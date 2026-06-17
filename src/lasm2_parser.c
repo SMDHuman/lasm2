@@ -143,7 +143,6 @@ static int parse_line(token_reader_t* reader, lines_t* lines, scope_t* parent){
   while(!token_reader_EOF(reader)){
   // print_single_token(token_reader_peek(reader, 0));printf("\n");
 
-    // Parse as scope
     if(token_reader_peek(reader, 0)->id == NEWLINE){
       token_reader_next(reader, 1);
     }
@@ -151,6 +150,7 @@ static int parse_line(token_reader_t* reader, lines_t* lines, scope_t* parent){
       token_reader_next(reader, 1);
       return 0;
     }
+    // Parse as scope
     else if(token_reader_peek(reader, 0)->id == DOT || token_reader_peek(reader, 0)->id == CBRAC_O){
       scope_t* scope = NEW(scope_t, 1);
       scope->parent = parent;

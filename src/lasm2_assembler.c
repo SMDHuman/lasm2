@@ -8,12 +8,55 @@
 #include "hh_bigint.h"
 #include "utils.h"
 
-int evaluate_expression(expr_node_t* expr, hh_bigint_t* result);
+typedef enum{
+  EVAL_OK,
+  EVAL_ERROR,
+  EVAL_UNKOWN_LOC,
+  EVAL_UNKOWN_BRANCH,
+  EVAL_UNKOWN_SCOPE,
+  EVAL_UNKOWN_OP,
+  EVAL_ERROR_TOKEN,
+  EVAL_INSUFFICIENT_EXPR
+}expr_eval_e;
+
+typedef struct assembler{
+  lines_t* root_line;
+  FILE* out_file;
+  scope_t** shallow_scopes;
+  struct assembler* parent;
+}assembler_t;
+
+expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assembler_t* assembler);
 int evaluate_token(token_t* token, hh_bigint_t* result);
+int assemble(assembler_t* self);
 
 //-----------------------------------------------------------------------------
-int assemble_lines(lines_t* lines, FILE* out_file){
-  lines_t* current_line = lines;
+int lasm2_assemble_to_file(lines_t* lines, FILE* out_file){
+  assembler_t main = {0};
+  main.root_line = lines;
+  main.out_file = out_file;
+  int res = assemble(&main);
+  if(res) return res;
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int assemble(assembler_t* self){
+  //...
+  hh_darray_t scope_array; hh_darray_init(&scope_array, sizeof(scope_t*));
+  for(lines_t* current_line = self->root_line; current_line->type != EMPTY; current_line = current_line->next){
+    if(current_line->type == SCOPE && ((scope_t*)current_line->line)->header != NULL){
+      hh_darray_append(&scope_array, &current_line->line);
+    }
+  }
+  self->shallow_scopes = NEW(scope_t*, hh_darray_get_item_fill(&scope_array)+1);
+  self->shallow_scopes[hh_darray_get_item_fill(&scope_array)] = NULL;
+  for(size_t i = 0; i < hh_darray_get_item_fill(&scope_array); i++){
+    hh_darray_get(&scope_array, i, &self->shallow_scopes[i]);
+  }
+  hh_darray_deinit(&scope_array);
+  //...
+  lines_t* current_line = self->root_line;
   while(1){
     // Exit conditions
     if(current_line->type == EMPTY) break;
@@ -21,9 +64,9 @@ int assemble_lines(lines_t* lines, FILE* out_file){
 
     if(current_line->type == EXPR){
       hh_bigint_t* value = hh_bigint_new(0);
-      int res = evaluate_expression(current_line->line, value);
-      if(res){return res;}
-      fwrite(value->data, 1, value->size, out_file);
+      expr_eval_e res = evaluate_expression(current_line->line, value, self);
+      if(res == EVAL_ERROR){return res;}
+      fwrite(value->data, 1, value->size, self->out_file);
       hh_bigint_print_hex(value);
       hh_bigint_free(value);
     }
@@ -35,27 +78,27 @@ int assemble_lines(lines_t* lines, FILE* out_file){
 }
 
 //-----------------------------------------------------------------------------
-int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
+expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assembler_t* assembler){
+  expr_eval_e err = EVAL_OK;
   hh_bigint_t* right_val = NULL;
   hh_bigint_t* left_val = NULL;
   //...
   if(expr->left){
     left_val = hh_bigint_new(0);
-    int res = evaluate_expression(expr->left, left_val);
+    expr_eval_e res = evaluate_expression(expr->left, left_val, assembler);
     if(res){hh_bigint_free(left_val); return res;}
   }
   if(expr->right){
     right_val = hh_bigint_new(0);
-    int res = evaluate_expression(expr->right, right_val);
+    expr_eval_e res = evaluate_expression(expr->right, right_val, assembler);
     if(res){hh_bigint_free(right_val); return res;}
   }
   //...
   switch(expr->token->id){
     case PLUS:{
       if(left_val && right_val){
-        int res = (int)hh_bigint_add(left_val, right_val, result);
-        if(res){return res;}
-      }
+        if(hh_bigint_add(left_val, right_val, result)){err = EVAL_ERROR;break;}
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case MINUS:{
       if(left_val != NULL && right_val == NULL){
@@ -63,21 +106,18 @@ int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
         result->sign = !result->sign;
       }
       else if(left_val && right_val){
-        int res = (int)hh_bigint_subtract(left_val, right_val, result);
-        if(res) return res;
-      }
+        if(hh_bigint_subtract(left_val, right_val, result)){err = EVAL_ERROR;break;}
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case ASTERISK:{
       if(left_val && right_val){
-        int res = (int)hh_bigint_multiply(left_val, right_val, result);
-        if(res){return res;}
-      }
+        if(hh_bigint_multiply(left_val, right_val, result)){err = EVAL_ERROR;break;}
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case SLASH:{
       if(left_val && right_val){
-        int res = (int)hh_bigint_divide(left_val, right_val, result);
-        if(res){return res;}
-      }
+        if(hh_bigint_divide(left_val, right_val, result)){err = EVAL_ERROR;break;}
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case SBRAC_O:{
       if(left_val && right_val){
@@ -88,21 +128,19 @@ int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
         }else{
           result->data[0] = 0;
         }
-      }
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case BITSHIFT_L:{
       if(left_val && right_val){
         uint64_t amount = hh_bigint_get_uint64(right_val);
-        int res = (int)hh_bigint_shift_left(left_val, amount, result);
-        if(res){return res;}
-      }
+        if(hh_bigint_shift_left(left_val, amount, result)){err = EVAL_ERROR;break;}
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case BITSHIFT_R:{
       if(left_val && right_val){
         uint64_t amount = hh_bigint_get_uint64(right_val);
-        int res = (int)hh_bigint_shift_right(left_val, amount, result);
-        if(res){return res;}
-      }
+        if(hh_bigint_shift_right(left_val, amount, result)){err = EVAL_ERROR;break;}
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case EXCLA:{
       if(left_val != NULL && right_val == NULL){
@@ -110,7 +148,7 @@ int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
         for(size_t i = 0; i < result->size; i++){
           result->data[i] = ~result->data[i];
         }
-      }
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case BITW_AND:{
       if(left_val && right_val){
@@ -120,7 +158,7 @@ int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
         for(size_t i = 0; i < result->size; i++){
           result->data[i] = result->data[i] & right_val->data[i];
         }
-      }
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case BITW_OR:{
       if(left_val && right_val){
@@ -130,7 +168,7 @@ int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
         for(size_t i = 0; i < result->size; i++){
           result->data[i] = result->data[i] | right_val->data[i];
         }
-      }
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case BITW_XOR:{
       if(left_val && right_val){
@@ -140,7 +178,7 @@ int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
         for(size_t i = 0; i < result->size; i++){
           result->data[i] = result->data[i] ^ right_val->data[i];
         }
-      }
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case DOLLAR:{
       if(left_val != NULL && right_val == NULL){
@@ -153,37 +191,37 @@ int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
         hh_bigint_copy(result, left_val);
         int res = (int)hh_bigint_resize(result, size);
         if(res) return res;
-      }
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case EQUAL:{
       if(left_val && right_val){
         hh_bigint_resize(result, 1);
         result->data[0] = hh_bigint_is_equal(left_val, right_val);
-      }
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case SMALLER:{
       if(left_val && right_val){
         hh_bigint_resize(result, 1);
         result->data[0] = hh_bigint_is_smaller(left_val, right_val);
-      }
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case GREATER:{
       if(left_val && right_val){
         hh_bigint_resize(result, 1);
         result->data[0] = hh_bigint_is_bigger(left_val, right_val);
-      }
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case EQ_SMALLER:{
       if(left_val && right_val){
         hh_bigint_resize(result, 1);
         result->data[0] = !hh_bigint_is_bigger(left_val, right_val);
-      }
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case EQ_GREATER:{
       if(left_val && right_val){
         hh_bigint_resize(result, 1);
         result->data[0] = !hh_bigint_is_smaller(left_val, right_val);
-      }
+      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
     }break;
     case COLON:{
       if(left_val==NULL || right_val==NULL){
@@ -195,11 +233,11 @@ int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
       if(expr->right->token->id == COLON){
         hh_bigint_t* zero = hh_bigint_new(0);
         if(hh_bigint_is_equal(left_val, zero)){
-          int res = evaluate_expression(expr->right->right, result);
-          if(res) return res;
+          err = evaluate_expression(expr->right->right, result, assembler);
+          if(err) break;
         }else{
-          int res = evaluate_expression(expr->right->left, result);
-          if(res) return res;
+          err = evaluate_expression(expr->right->left, result, assembler);
+          if(err) break;
         }
       }else{
         print_error_loc(expr->token);
@@ -213,15 +251,18 @@ int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
         print_error_loc(expr->token);
         printf("Something is wrong with the expression.\n");
       }
-      int res = evaluate_token(expr->token, result);
-      if(res) return res;
+      if(evaluate_token(expr->token, result)){err = EVAL_ERROR_TOKEN; break;}
     }break;
     case WORD:{
       if(expr->token->text_size == 1 && expr->token->text[0] == '_'){
         hh_bigint_resize(result, 0);
-        break;
       }
-    }
+      else{
+        print_warning_loc(expr->token);
+        printf("Unkown branch name.\n");
+        err = EVAL_UNKOWN_BRANCH;
+      }
+    }break;
     default:{
       print_warning_loc(expr->token);
       printf("Unkown Operation '%s'\n", token_id_to_string(expr->token->id));
@@ -230,7 +271,7 @@ int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
   //...
   if(left_val) hh_bigint_free(left_val);
   if(right_val) hh_bigint_free(right_val);
-  return 0;
+  return err;
 }
 
 //-----------------------------------------------------------------------------
