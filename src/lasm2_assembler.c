@@ -23,6 +23,7 @@ int assemble_lines(lines_t* lines, FILE* out_file){
       hh_bigint_t* value = hh_bigint_new(0);
       int res = evaluate_expression(current_line->line, value);
       if(res){return res;}
+      fwrite(value->data, 1, value->size, out_file);
       hh_bigint_print_hex(value);
       hh_bigint_free(value);
     }
@@ -87,6 +88,20 @@ int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
         }else{
           result->data[0] = 0;
         }
+      }
+    }break;
+    case BITSHIFT_L:{
+      if(left_val && right_val){
+        uint64_t amount = hh_bigint_get_uint64(right_val);
+        int res = (int)hh_bigint_shift_left(left_val, amount, result);
+        if(res){return res;}
+      }
+    }break;
+    case BITSHIFT_R:{
+      if(left_val && right_val){
+        uint64_t amount = hh_bigint_get_uint64(right_val);
+        int res = (int)hh_bigint_shift_right(left_val, amount, result);
+        if(res){return res;}
       }
     }break;
     case EXCLA:{
@@ -201,8 +216,15 @@ int evaluate_expression(expr_node_t* expr, hh_bigint_t* result){
       int res = evaluate_token(expr->token, result);
       if(res) return res;
     }break;
+    case WORD:{
+      if(expr->token->text_size == 1 && expr->token->text[0] == '_'){
+        hh_bigint_resize(result, 0);
+        break;
+      }
+    }
     default:{
-      printf("[WARNING] Unkown Operation '%s'\n", token_id_to_string(expr->token->id));
+      print_warning_loc(expr->token);
+      printf("Unkown Operation '%s'\n", token_id_to_string(expr->token->id));
     }break;
   }
   //...
