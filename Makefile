@@ -13,7 +13,7 @@ OBJECTS := $(BUILD_DIR)/lasm2_tokenizer.o \
 			 $(BUILD_DIR)/lasm2_macro.o \
 			 $(BUILD_DIR)/lasm2_tokenreader.o \
 			 $(BUILD_DIR)/lasm2_parser.o \
-			 #$(BUILD_DIR)/lasm2_assembler.o
+			 $(BUILD_DIR)/lasm2_assembler.o
 
 # Main target
 $(BUILD_DIR)/lasm2: $(BUILD_DIR) $(wildcard $(SRC_DIR)/*) $(wildcard $(CPU_DIR)/*) $(OBJECTS)

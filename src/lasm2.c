@@ -6,6 +6,7 @@
 #include "lasm2_tokenizer.h"
 #include "lasm2_macro.h"
 #include "lasm2_parser.h"
+#include "lasm2_assembler.h"
 #include "utils.h"
 
 typedef struct {
@@ -15,8 +16,7 @@ typedef struct {
   char** include_paths;
   token_t *tokens;
   macro_t *macros;
-  // labels
-  // scopes
+  lines_t *lines;
 } assembler_t;
 
 void help_command(const char *invoc_name);
@@ -67,7 +67,6 @@ int main(int argc, char *argv[]){
   if(hh_argparse_check_op_short(parser, 'o') || hh_argparse_check_op_long(parser, "output")){
     output_filename = hh_argparse_get_op_short_or_long(parser, 'o', "output");
   }
-  assembler.output_file = fopen(output_filename, "w");
   // Unpack input file
   printf("[INFO] Reading input file\n");
   exit_code = load_input_file(assembler.input_file.name, &assembler.input_file);
@@ -97,20 +96,25 @@ int main(int argc, char *argv[]){
     }
   }
 
-  lines_t* lines = NEW(lines_t, 1);
+  assembler.lines = NEW(lines_t, 1);
   printf("[INFO] Parsing\n");
-  exit_code = lasm2_parser(assembler.tokens, lines);
+  exit_code = lasm2_parser(assembler.tokens, assembler.lines);
   if(exit_code != 0){
     goto exit_assembler;
   }
   printf("[INFO] Lines parsed\n");
-  print_line(lines, 1);
+  print_line(assembler.lines, 1);
   
   // for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
   //   print_single_token(&assembler.tokens[i]);
   //   printf("\n");
   // }
   
+  assembler.output_file = fopen(output_filename, "w");
+  exit_code = assemble_lines(assembler.lines, assembler.output_file);
+  if(exit_code != 0){
+    goto exit_assembler;
+  }
 
   exit_assembler:
   // Deinitialize everything
@@ -120,7 +124,8 @@ int main(int argc, char *argv[]){
   if(assembler.output_file) fclose(assembler.output_file);
   if(assembler.input_file.text) free(assembler.input_file.text);
   if(assembler.tokens) free(assembler.tokens);
-  if(assembler.macros) free(assembler.macros);
+  //if(assembler.macros) free(assembler.macros);
+  if(assembler.lines) free_lines(assembler.lines);
   //..,
   struct timespec end_time; timespec_get(&end_time, TIME_UTC); 
   if(exit_code != 0){
@@ -129,7 +134,6 @@ int main(int argc, char *argv[]){
     printf("[INFO] Assembling completed successfully");
     printf(" (%ld ms)\n", (end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_nsec - start_time.tv_nsec) / 1000000);
   }
-  free_lines(lines);
   return exit_code;
 }
 //-----------------------------------------------------------------------------
