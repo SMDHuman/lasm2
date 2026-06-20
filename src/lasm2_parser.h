@@ -19,6 +19,7 @@ typedef struct{
   expr_node_t* start_address;
   expr_node_t* end_address;
   uint64_t location;
+  uint8_t eval_flag; // 0 if location is not evaluated
 }branch_t;
 
 typedef struct lines{

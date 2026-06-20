@@ -22,6 +22,15 @@
 //                 / \
 //                4   3
 
-.bone[5]
+.human{
+  .liver{
+    .left; 0
+    .right; 0
+  }
+  0xfa
+  .bone[32]
+  0xfb
+}
+human
+human.bone
 
-bone

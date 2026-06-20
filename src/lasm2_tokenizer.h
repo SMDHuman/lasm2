@@ -78,6 +78,7 @@ typedef struct t_token{
 //-----------------------------------------------------------------------------
 int load_input_file(char* input_name, lasm_file_t* file);
 uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens);
+uint8_t is_tokens_name_same(token_t* A, token_t* B);
 char char_upper(char c);
 char char_lower(char c);
 uint8_t is_alpha(char c);

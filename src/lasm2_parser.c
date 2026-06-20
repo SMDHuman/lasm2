@@ -92,6 +92,8 @@ static expr_node_t* parse_expression_right(token_reader_t* reader, float min_prc
 
 //-----------------------------------------------------------------------------
 static int parse_scope(token_reader_t* reader, scope_t* scope){
+  static int scope_counter = 0;
+  scope_counter++;
   if(token_reader_peek(reader, 0)->id == DOT){
     token_reader_next(reader, 1);
     if(!token_reader_expect(reader, WORD, 0)) return -1;
@@ -113,7 +115,8 @@ static int parse_scope(token_reader_t* reader, scope_t* scope){
       }
     }
   }else{
-    scope->header = NULL;
+    scope->header = NEW(branch_t, 1);
+    memcpy(scope->header->name, token_reader_peek(reader, 0), sizeof(token_t));
   }
   //...
   token_reader_skip_until_not(reader, NEWLINE);

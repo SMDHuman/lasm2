@@ -2,103 +2,100 @@
 // lasm2_assembler.c
 // github.com/SMDHuman
 //-----------------------------------------------------------------------------
-#include "lasm2_assembler.h"
-#include "lasm2_parser.h"
 #define HH_BIGINT_IMPLEMENTATION
 #include "hh_bigint.h"
+#include "lasm2_assembler.h"
+#include "lasm2_parser.h"
+#define LASM2_UTILS_IMPLEMENTATION
 #include "utils.h"
 
-typedef enum{
-  EVAL_OK,
-  EVAL_ERROR,
-  EVAL_UNKOWN_LOC,
-  EVAL_UNKOWN_BRANCH,
-  EVAL_UNKOWN_SCOPE,
-  EVAL_UNKOWN_OP,
-  EVAL_ERROR_TOKEN,
-  EVAL_INSUFFICIENT_EXPR
-}expr_eval_e;
 
-typedef struct assembler{
-  lines_t* root_line;
-  FILE* out_file;
-  scope_t** shallow_scopes;
-  struct assembler* parent;
-}assembler_t;
-
-expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assembler_t* assembler);
-int evaluate_token(token_t* token, hh_bigint_t* result);
-int assemble(assembler_t* self);
+// assembler_t* get_sub_assemblies_with_header(branch_t* header, assembler_t* assembler);
+// assembler_t* init_assembler(lines_t* lines, FILE* out_file);
+// expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assembler_t* assembler);
+// int evaluate_token(assembler_t* assembler, token_t* token, hh_bigint_t* result);
+// int assemble(assembler_t* self);
+// int str_chr_count(const char* str, char chr);
 
 //-----------------------------------------------------------------------------
-int lasm2_assemble_to_file(lines_t* lines, FILE* out_file){
-  assembler_t main = {0};
-  main.root_line = lines;
-  main.out_file = out_file;
-  int res = assemble(&main);
-  if(res) return res;
-  return 0;
+assembly_t* lasm2_assembly_new(lines_t* lines, assembly_config_t* config){
+  assembly_t* new = NEW(assembly_t, 1);
+  new->config = NEW(assembly_config_t, 1); 
+  memcpy(new->config, config, sizeof(assembly_config_t));
+  new->root_line = lines;
+  new->scopes = lasm2_assembly_extract_scope_tree(new->root_line);
+  new->scopes->header = NULL;
+  new->scopes->parent_scope = NULL;
+  print_assembly_scope(new->scopes);
+  return new;
 }
 
 //-----------------------------------------------------------------------------
-int assemble(assembler_t* self){
-  //...
-  hh_darray_t scope_array; hh_darray_init(&scope_array, sizeof(scope_t*));
-  for(lines_t* current_line = self->root_line; current_line->type != EMPTY; current_line = current_line->next){
-    if(current_line->type == SCOPE && ((scope_t*)current_line->line)->header != NULL){
-      hh_darray_append(&scope_array, &current_line->line);
+assembly_scope_t* lasm2_assembly_extract_scope_tree(lines_t* lines){
+  assembly_scope_t* assembly_scope = NEW(assembly_scope_t, 1);
+  hh_darray_t sub_scopes_array; hh_darray_init(&sub_scopes_array, sizeof(assembly_scope_t*));
+  lines_t* current_line = lines;
+  while(!(current_line == NULL || current_line->type == EMPTY)){
+    //...
+    if(current_line->type == SCOPE){
+      scope_t* scope = current_line->line;
+      assembly_scope_t* sub_scope = lasm2_assembly_extract_scope_tree(scope->lines);
+      sub_scope->header = scope->header;
+      sub_scope->parent_scope = assembly_scope;
+      hh_darray_append(&sub_scopes_array, &sub_scope);
     }
+    current_line = current_line->next;
   }
-  self->shallow_scopes = NEW(scope_t*, hh_darray_get_item_fill(&scope_array)+1);
-  self->shallow_scopes[hh_darray_get_item_fill(&scope_array)] = NULL;
-  for(size_t i = 0; i < hh_darray_get_item_fill(&scope_array); i++){
-    hh_darray_get(&scope_array, i, &self->shallow_scopes[i]);
+  // Deinitialize array 
+  assembly_scope->sub_scopes_size = hh_darray_get_item_fill(&sub_scopes_array);
+  if(assembly_scope->sub_scopes_size > 0){
+    assembly_scope->sub_scopes = NEW(assembly_scope_t*, assembly_scope->sub_scopes_size);
+  }else assembly_scope->sub_scopes = NULL;
+  for(int i = 0; i < assembly_scope->sub_scopes_size; i++){
+    hh_darray_get(&sub_scopes_array, i, &assembly_scope->sub_scopes[i]);
   }
-  hh_darray_deinit(&scope_array);
-  //...
-  lines_t* current_line = self->root_line;
-  while(1){
-    // Exit conditions
-    if(current_line->type == EMPTY) break;
-    if(current_line == NULL) break;
-
+  hh_darray_deinit(&sub_scopes_array);
+  return assembly_scope;
+}
+//-----------------------------------------------------------------------------
+int lasm2_assemble(assembly_t *assembly){
+  lines_t* current_line = assembly->root_line;
+  while(!(current_line == NULL || current_line->type == EMPTY)){
     if(current_line->type == EXPR){
       hh_bigint_t* value = hh_bigint_new(0);
-      expr_eval_e res = evaluate_expression(current_line->line, value, self);
-      if(res == EVAL_ERROR){return res;}
-      fwrite(value->data, 1, value->size, self->out_file);
+      int res = lasm2_evaluate_expression(assembly, current_line->line, value);
+      fwrite(value->data, 1, value->size, assembly->config->out_file);
       hh_bigint_print_hex(value);
       hh_bigint_free(value);
+      if(res) return res;
     }
-    
-    //...
     current_line = current_line->next;
   }
   return 0;
 }
 
 //-----------------------------------------------------------------------------
-expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assembler_t* assembler){
-  expr_eval_e err = EVAL_OK;
+int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint_t* result){
+  int err = 0;
   hh_bigint_t* right_val = NULL;
   hh_bigint_t* left_val = NULL;
   //...
   if(expr->left){
     left_val = hh_bigint_new(0);
-    expr_eval_e res = evaluate_expression(expr->left, left_val, assembler);
+    int res = lasm2_evaluate_expression(assembly, expr->left, left_val);
     if(res){hh_bigint_free(left_val); return res;}
   }
   if(expr->right){
     right_val = hh_bigint_new(0);
-    expr_eval_e res = evaluate_expression(expr->right, right_val, assembler);
+    int res = lasm2_evaluate_expression(assembly, expr->right, right_val);
     if(res){hh_bigint_free(right_val); return res;}
   }
   //...
   switch(expr->token->id){
     case PLUS:{
       if(left_val && right_val){
-        if(hh_bigint_add(left_val, right_val, result)){err = EVAL_ERROR;break;}
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+        if(hh_bigint_add(left_val, right_val, result)){err = -1;break;}
+      }else{ err = -1; break; }
     }break;
     case MINUS:{
       if(left_val != NULL && right_val == NULL){
@@ -106,18 +103,18 @@ expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assemble
         result->sign = !result->sign;
       }
       else if(left_val && right_val){
-        if(hh_bigint_subtract(left_val, right_val, result)){err = EVAL_ERROR;break;}
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+        if(hh_bigint_subtract(left_val, right_val, result)){err = -1;break;}
+      }else{ err = -1; break; }
     }break;
     case ASTERISK:{
       if(left_val && right_val){
-        if(hh_bigint_multiply(left_val, right_val, result)){err = EVAL_ERROR;break;}
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+        if(hh_bigint_multiply(left_val, right_val, result)){err = -1;break;}
+      }else{ err = -1; break; }
     }break;
     case SLASH:{
       if(left_val && right_val){
-        if(hh_bigint_divide(left_val, right_val, result)){err = EVAL_ERROR;break;}
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+        if(hh_bigint_divide(left_val, right_val, result)){err = -1;break;}
+      }else{ err = -1; break; }
     }break;
     case SBRAC_O:{
       if(left_val && right_val){
@@ -128,19 +125,19 @@ expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assemble
         }else{
           result->data[0] = 0;
         }
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+      }else{ err = -1; break; }
     }break;
     case BITSHIFT_L:{
       if(left_val && right_val){
         uint64_t amount = hh_bigint_get_uint64(right_val);
-        if(hh_bigint_shift_left(left_val, amount, result)){err = EVAL_ERROR;break;}
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+        if(hh_bigint_shift_left(left_val, amount, result)){err = -1;break;}
+      }else{ err = -1; break; }
     }break;
     case BITSHIFT_R:{
       if(left_val && right_val){
         uint64_t amount = hh_bigint_get_uint64(right_val);
-        if(hh_bigint_shift_right(left_val, amount, result)){err = EVAL_ERROR;break;}
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+        if(hh_bigint_shift_right(left_val, amount, result)){err = -1;break;}
+      }else{ err = -1; break; }
     }break;
     case EXCLA:{
       if(left_val != NULL && right_val == NULL){
@@ -148,7 +145,7 @@ expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assemble
         for(size_t i = 0; i < result->size; i++){
           result->data[i] = ~result->data[i];
         }
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+      }else{ err = -1; break; }
     }break;
     case BITW_AND:{
       if(left_val && right_val){
@@ -158,7 +155,7 @@ expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assemble
         for(size_t i = 0; i < result->size; i++){
           result->data[i] = result->data[i] & right_val->data[i];
         }
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+      }else{ err = -1; break; }
     }break;
     case BITW_OR:{
       if(left_val && right_val){
@@ -168,7 +165,7 @@ expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assemble
         for(size_t i = 0; i < result->size; i++){
           result->data[i] = result->data[i] | right_val->data[i];
         }
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+      }else{ err = -1; break; }
     }break;
     case BITW_XOR:{
       if(left_val && right_val){
@@ -178,7 +175,7 @@ expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assemble
         for(size_t i = 0; i < result->size; i++){
           result->data[i] = result->data[i] ^ right_val->data[i];
         }
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+      }else{ err = -1; break; }
     }break;
     case DOLLAR:{
       if(left_val != NULL && right_val == NULL){
@@ -191,37 +188,37 @@ expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assemble
         hh_bigint_copy(result, left_val);
         int res = (int)hh_bigint_resize(result, size);
         if(res) return res;
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+      }else{ err = -1; break; }
     }break;
     case EQUAL:{
       if(left_val && right_val){
         hh_bigint_resize(result, 1);
         result->data[0] = hh_bigint_is_equal(left_val, right_val);
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+      }else{ err = -1; break; }
     }break;
     case SMALLER:{
       if(left_val && right_val){
         hh_bigint_resize(result, 1);
         result->data[0] = hh_bigint_is_smaller(left_val, right_val);
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+      }else{ err = -1; break; }
     }break;
     case GREATER:{
       if(left_val && right_val){
         hh_bigint_resize(result, 1);
         result->data[0] = hh_bigint_is_bigger(left_val, right_val);
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+      }else{ err = -1; break; }
     }break;
     case EQ_SMALLER:{
       if(left_val && right_val){
         hh_bigint_resize(result, 1);
         result->data[0] = !hh_bigint_is_bigger(left_val, right_val);
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+      }else{ err = -1; break; }
     }break;
     case EQ_GREATER:{
       if(left_val && right_val){
         hh_bigint_resize(result, 1);
         result->data[0] = !hh_bigint_is_smaller(left_val, right_val);
-      }else{ err = EVAL_INSUFFICIENT_EXPR; break; }
+      }else{ err = -1; break; }
     }break;
     case COLON:{
       if(left_val==NULL || right_val==NULL){
@@ -233,10 +230,10 @@ expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assemble
       if(expr->right->token->id == COLON){
         hh_bigint_t* zero = hh_bigint_new(0);
         if(hh_bigint_is_equal(left_val, zero)){
-          err = evaluate_expression(expr->right->right, result, assembler);
+          err = lasm2_evaluate_expression(assembly, expr->right->right, result);
           if(err) break;
         }else{
-          err = evaluate_expression(expr->right->left, result, assembler);
+          err = lasm2_evaluate_expression(assembly, expr->right->left, result);
           if(err) break;
         }
       }else{
@@ -246,22 +243,14 @@ expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assemble
     }break;
     case STRING_DB:
     case STRING_SG:
+    case WORD:
     case NUMBER:{
       if(left_val || right_val){
         print_error_loc(expr->token);
         printf("Something is wrong with the expression.\n");
       }
-      if(evaluate_token(expr->token, result)){err = EVAL_ERROR_TOKEN; break;}
-    }break;
-    case WORD:{
-      if(expr->token->text_size == 1 && expr->token->text[0] == '_'){
-        hh_bigint_resize(result, 0);
-      }
-      else{
-        print_warning_loc(expr->token);
-        printf("Unkown branch name.\n");
-        err = EVAL_UNKOWN_BRANCH;
-      }
+      // TODO THIS
+      if(evaluate_token(assembly, expr->token, result)){err = -1; break;}
     }break;
     default:{
       print_warning_loc(expr->token);
@@ -275,7 +264,43 @@ expr_eval_e evaluate_expression(expr_node_t* expr, hh_bigint_t* result, assemble
 }
 
 //-----------------------------------------------------------------------------
-int evaluate_token(token_t* token, hh_bigint_t* result){
+void print_assembly_scope(assembly_scope_t* assembly_scope){
+  if(assembly_scope == NULL){
+    printf("NULL assembly_scope\n");
+    return;
+  }
+  print_assembly_scope_indent(assembly_scope, 0);
+}
+
+//-----------------------------------------------------------------------------
+void print_assembly_scope_indent(assembly_scope_t* assembly_scope, int indent){
+  if(assembly_scope == NULL){
+    return;
+  }
+  
+  for(int i = 0; i < indent; i++) printf("  ");
+  printf("AssemblyScope:");
+  
+  if(assembly_scope->header != NULL){
+    printf("name=");
+    if(assembly_scope->header->name != NULL){
+      print_single_token(assembly_scope->header->name);
+    }
+    printf(", location=%lu, eval_flag=%u", assembly_scope->header->location, assembly_scope->header->eval_flag);
+  } else {
+    printf("(root scope)");
+  }
+  printf("\n");
+  
+  // Print all sub-scopes
+  for(int i = 0; i < assembly_scope->sub_scopes_size; i++){
+    print_assembly_scope_indent(assembly_scope->sub_scopes[i], indent + 1);
+  }
+}
+
+//-----------------------------------------------------------------------------
+// TODO THAT
+int evaluate_token(assembly_t* assembler, token_t* token, hh_bigint_t* result){
   if(token->id == NUMBER){
     char* text = NEW(char, token->text_size+1);
     memcpy(text, token->text, token->text_size); text[token->text_size] = 0;
@@ -285,7 +310,7 @@ int evaluate_token(token_t* token, hh_bigint_t* result){
     }
     free(text);
   }
-  if(token->id == STRING_DB || token->id == STRING_SG){
+  else if(token->id == STRING_DB || token->id == STRING_SG){
     hh_bigint_resize(result, token->text_size);
     memcpy(result->data, token->text, token->text_size);
   }

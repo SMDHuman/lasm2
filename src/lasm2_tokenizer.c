@@ -260,6 +260,11 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 	return 0;
 }
 //-----------------------------------------------------------------------------
+uint8_t is_tokens_name_same(token_t* A, token_t* B){
+	return (uint8_t)(A->text_size == B->text_size && memcmp(A->text, B->text, A->text_size) == 0);
+}
+
+//-----------------------------------------------------------------------------
 uint8_t is_alpha(char c){
 	if(((uint8_t)c <= 90 && (uint8_t)c >= 65) || 
 	((uint8_t)c <= 122 && (uint8_t)c >= 97)) return 1;
