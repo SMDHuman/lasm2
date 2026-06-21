@@ -1,7 +1,7 @@
 #ifndef LASM2_UTILS_H
 #define LASM2_UTILS_H
 
-#define NEW(type, size) (type*)malloc(sizeof(type)*(size))
+#define NEW(_type, _size) (_type*)calloc((_size), sizeof(_type))
 int str_chr_count(const char* str, char chr);
 char* str_first_chr(const char* str, char chr);
 

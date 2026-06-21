@@ -116,7 +116,10 @@ static int parse_scope(token_reader_t* reader, scope_t* scope){
     }
   }else{
     scope->header = NEW(branch_t, 1);
-    memcpy(scope->header->name, token_reader_peek(reader, 0), sizeof(token_t));
+    scope->header->start_address = NULL; 
+    scope->header->end_address = NULL;
+    scope->header->eval_flag = 0;
+    scope->header->name = token_reader_peek(reader, 0);
   }
   //...
   token_reader_skip_until_not(reader, NEWLINE);

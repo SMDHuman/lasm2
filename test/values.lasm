@@ -23,14 +23,17 @@
 //                4   3
 
 .human{
+  0xfc
   .liver{
     .left; 0
     .right; 0
+    human
   }
   0xfa
   .bone[32]
   0xfb
+  bone
 }
 human
-human.bone
+human.liver
 

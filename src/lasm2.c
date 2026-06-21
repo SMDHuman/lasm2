@@ -129,6 +129,7 @@ int main(int argc, char *argv[]){
   if(assembler.output_file) fclose(assembler.output_file);
   if(assembler.input_file.text) free(assembler.input_file.text);
   if(assembler.tokens) free(assembler.tokens);
+  if(assembly) lasm2_assembly_free(assembly);
   //if(assembler.macros) free(assembler.macros);
   if(assembler.lines) free_lines(assembler.lines);
   //..,
