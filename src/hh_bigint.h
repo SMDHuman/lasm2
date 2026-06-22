@@ -5,7 +5,7 @@
 // functions return 255 on failure
 //-----------------------------------------------------------------------------
 // Author		: github.com/SMDHuman
-// Last Update	: 16.06.2026
+// Last Update	: 22.06.2026
 //-----------------------------------------------------------------------------
 #ifndef HH_BIGINT_H
 #define HH_BIGINT_H
@@ -48,6 +48,9 @@
 #define hbi_shift_left hh_bigint_shift_left
 #define hbi_shift_right hh_bigint_shift_right
 #define hbi_normalize hh_bigint_normalize
+#define hh_bigint_divide hbi_divide
+#define hh_bigint_modulo hbi_modulo
+#define hh_bigint_reverse_bits hbi_reverse_bits
 #endif
 //-----------------------------------------------------------------------------
 // Big integer structure
@@ -100,6 +103,7 @@ uint8_t hh_bigint_bitwise_and(const hh_bigint_t *a, const hh_bigint_t *b, hh_big
 uint8_t hh_bigint_normalize(hh_bigint_t *bigint);
 uint8_t hh_bigint_divide(const hh_bigint_t *a, const hh_bigint_t *b, hh_bigint_t *result);
 uint8_t hh_bigint_modulo(const hh_bigint_t *a, const hh_bigint_t *b, hh_bigint_t *result);
+uint8_t hh_bigint_reverse_bits(hh_bigint_t *bigint);
 
 //-----------------------------------------------------------------------------
 #ifdef HH_BIGINT_IMPLEMENTATION
@@ -800,6 +804,13 @@ uint8_t hh_bigint_modulo(const hh_bigint_t *a, const hh_bigint_t *b, hh_bigint_t
     hh_bigint_deinit(&quotient);
     hh_bigint_deinit(&product);
     
+    return 0;
+}
+//-----------------------------------------------------------------------------
+uint8_t hh_bigint_reverse_bits(hh_bigint_t *bigint){
+    for(size_t i = 0; i < bigint->size; i++){
+        bigint->data[i] = ~bigint->data[i];
+    }
     return 0;
 }
 

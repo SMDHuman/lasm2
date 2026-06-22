@@ -85,6 +85,7 @@ int lasm2_assemble(assembly_t *assembly){
         new_patch->expr = current_line->line;
         new_patch->index = ftell(assembly->config->out_file);
         new_patch->size = value->size;
+        new_patch->scope = assembly->current_scope;
         if(assembly->root_patch){
           assembly->leaf_patch->next = new_patch;
           assembly->leaf_patch = assembly->leaf_patch->next;
@@ -92,6 +93,10 @@ int lasm2_assemble(assembly_t *assembly){
           assembly->root_patch = new_patch;
           assembly->leaf_patch = new_patch;
         }
+      }
+      if(value->sign){
+        hh_bigint_reverse_bits(value);
+        hh_bigint_add_int32(value, -1);
       }
       fwrite(value->data, 1, value->size, assembly->config->out_file);
       // hh_bigint_print_hex(value);
@@ -122,6 +127,7 @@ int lasm2_assemble(assembly_t *assembly){
           }
           found_asm_scope->header->location = hh_bigint_get_uint64(address_gint);
           found_asm_scope->header->eval_flag = 1;
+          fseek(assembly->config->out_file, found_asm_scope->header->location, SEEK_END);
           hh_bigint_free(address_gint);
         }else{
           found_asm_scope->header->location = ftell(assembly->config->out_file);
@@ -146,6 +152,8 @@ int lasm2_assemble_patches(assembly_t *assembly){
   assembly_patch_t* current_patch = assembly->root_patch;
   while(current_patch != NULL){
     hh_bigint_t* value = hh_bigint_new(0);
+    // print_expression(current_patch->expr, 1);
+    assembly->current_scope = current_patch->scope;
     int res = lasm2_evaluate_expression(assembly, current_patch->expr, value);
     
     if(res < 0){
@@ -214,12 +222,14 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
     left_val = hh_bigint_new(0);
     err = lasm2_evaluate_expression(assembly, expr->left, left_val);
   }
-  if(expr->right){
-    right_val = hh_bigint_new(0);
-    err = lasm2_evaluate_expression(assembly, expr->right, right_val);
+  if(err == 0){
+    if(expr->right){
+      right_val = hh_bigint_new(0);
+      err = lasm2_evaluate_expression(assembly, expr->right, right_val);
+    }
   }
   //...
-  if(!err){
+  if(err == 0){
     switch(expr->token->id){
       case PLUS:{
         if(left_val && right_val){
@@ -381,13 +391,16 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
         if(evaluate_token(expr->token, result)){err = -1; break;}
       }break;
       case WORD:{
+        if(expr->token->text_size == 1 && expr->token->text[0] == '_'){
+          hh_bigint_resize(result, 0);
+          break;
+        }
         branch_t* branch = find_header_with_token_in_scopes(assembly->current_scope, expr->token);
         if(branch){
           if(branch->eval_flag){
             hh_bigint_set_uint64(result, branch->location);
             hh_bigint_resize(result, assembly->config->branch_default_size);
           }else{
-            // TODO
             hh_bigint_set_uint64(result, 0);
             hh_bigint_resize(result, assembly->config->branch_default_size);
             err = 1; break;

@@ -20,6 +20,7 @@ typedef struct assembly_patch{
   size_t index;
   size_t size;
   expr_node_t* expr;
+  assembly_scope_t* scope;
   struct assembly_patch* next;
 }assembly_patch_t;
 
