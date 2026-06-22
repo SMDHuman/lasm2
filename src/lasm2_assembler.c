@@ -127,7 +127,7 @@ int lasm2_assemble(assembly_t *assembly){
           }
           found_asm_scope->header->location = hh_bigint_get_uint64(address_gint);
           found_asm_scope->header->eval_flag = 1;
-          fseek(assembly->config->out_file, found_asm_scope->header->location, SEEK_END);
+          fseek(assembly->config->out_file, found_asm_scope->header->location, SEEK_SET);
           hh_bigint_free(address_gint);
         }else{
           found_asm_scope->header->location = ftell(assembly->config->out_file);
