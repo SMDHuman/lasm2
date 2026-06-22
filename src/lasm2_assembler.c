@@ -94,7 +94,7 @@ int lasm2_assemble(assembly_t *assembly){
         }
       }
       fwrite(value->data, 1, value->size, assembly->config->out_file);
-      hh_bigint_print_hex(value);
+      // hh_bigint_print_hex(value);
       hh_bigint_free(value);
       if(res < 0) return res;
     }
