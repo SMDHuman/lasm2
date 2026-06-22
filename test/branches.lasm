@@ -3,25 +3,27 @@
 .hihihhi[5-4]
 .cipcip[7::5+3]
 
+.hey[10];.how[12];
+
 .taktak{
-  5 - 5;
+  5 - 2;
   hey; how;
 }
 
 .tuktak[4]{
-  5 - 5;
+  5 - 3;
   hey; how;
 
   .taktuk[4::223-2]{
-    6 - 6;
-    heww; hoyyy;
+    6 - 1;
+    .heww; .hoyyy;
   }
 }
 
-asd.asd.asd
+tuktak.taktuk.heww
 
 {
   hey
   .how
-  hoo
+  how
 }

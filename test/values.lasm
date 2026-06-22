@@ -21,6 +21,9 @@
 //    4   3     5   *     
 //                 / \
 //                4   3
+0xffeedd;
+human
+0xbbccdd;
 
 .human{
   0xfc
@@ -34,6 +37,5 @@
   0xfb
   bone
 }
-human
 human.liver
 

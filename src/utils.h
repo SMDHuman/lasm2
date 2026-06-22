@@ -3,7 +3,7 @@
 
 #define NEW(_type, _size) (_type*)calloc((_size), sizeof(_type))
 int str_chr_count(const char* str, char chr);
-char* str_first_chr(const char* str, char chr);
+char* str_first_chr(char* str, char chr);
 
 #ifdef LASM2_UTILS_IMPLEMENTATION
 
@@ -16,7 +16,7 @@ int str_chr_count(const char* str, char chr){
     count += (str[i] == chr);
   return count;
 }
-char* str_first_chr(const char* str, char chr){
+char* str_first_chr(char* str, char chr){
   for(int i = 0; str[i]; i++)
     if(str[i] == chr) return str+i;
   return str;

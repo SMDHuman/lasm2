@@ -103,7 +103,7 @@ int main(int argc, char *argv[]){
     goto exit_assembler;
   }
   printf("[INFO] Lines parsed\n");
-  print_line(assembler.lines, 1);
+  // print_line(assembler.lines, 1);
   
   // for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
   //   print_single_token(&assembler.tokens[i]);
@@ -115,6 +115,11 @@ int main(int argc, char *argv[]){
   assembler.output_file = fopen(output_filename, "w");
   assembly_t* assembly = lasm2_assembly_new(assembler.lines, &(assembly_config_t){.branch_default_size=2,.out_file=assembler.output_file});
   exit_code = lasm2_assemble(assembly);
+  if(exit_code != 0){
+    goto exit_assembler;
+  }
+  printf("[INFO] Assembling Patches\n");
+  exit_code = lasm2_assemble_patches(assembly);
   if(exit_code != 0){
     goto exit_assembler;
   }

@@ -17,8 +17,10 @@ assembly_t* lasm2_assembly_new(lines_t* lines, assembly_config_t* config){
   new->root_scope = lasm2_assembly_extract_scope_tree(lines);
   new->root_scope->header = NULL;
   new->root_scope->parent_scope = NULL;
+  new->root_patch = NULL;
+  new->leaf_patch = NULL;
   new->current_scope = new->root_scope;
-  print_assembly_scope(new->root_scope);
+  // print_assembly_scope(new->root_scope);
   return new;
 }
 
@@ -55,8 +57,13 @@ int lasm2_assembly_free(assembly_t* assembly){
   }
   
   // Free patches if allocated
-  if(assembly->patches != NULL){
-    free(assembly->patches);
+  if(assembly->root_patch != NULL){
+    assembly_patch_t* current_patch = assembly->root_patch;
+    while(current_patch != NULL){
+      assembly_patch_t* next_patch = current_patch->next;
+      free(current_patch);
+      current_patch = next_patch;
+    }
   }
   
   // Free the assembly itself
@@ -73,16 +80,29 @@ int lasm2_assemble(assembly_t *assembly){
     if(current_line->type == EXPR){
       hh_bigint_t* value = hh_bigint_new(0);
       int res = lasm2_evaluate_expression(assembly, current_line->line, value);
+      if(res == 1){
+        assembly_patch_t* new_patch = NEW(assembly_patch_t, 1);
+        new_patch->expr = current_line->line;
+        new_patch->index = ftell(assembly->config->out_file);
+        new_patch->size = value->size;
+        if(assembly->root_patch){
+          assembly->leaf_patch->next = new_patch;
+          assembly->leaf_patch = assembly->leaf_patch->next;
+        }else{
+          assembly->root_patch = new_patch;
+          assembly->leaf_patch = new_patch;
+        }
+      }
       fwrite(value->data, 1, value->size, assembly->config->out_file);
       hh_bigint_print_hex(value);
       hh_bigint_free(value);
-      if(res) return res;
+      if(res < 0) return res;
     }
     if(current_line->type == SCOPE){
       //...
       scope_t* scope = current_line->line;
       assembly_scope_t* found_asm_scope = NULL;
-      for(int i = 0; i < assembly->current_scope->sub_scopes_size; i++){
+      for(size_t i = 0; i < assembly->current_scope->sub_scopes_size; i++){
         assembly_scope_t* asm_scope = assembly->current_scope->sub_scopes[i];
         if(asm_scope->header == scope->header){
           found_asm_scope = asm_scope;
@@ -118,6 +138,38 @@ int lasm2_assemble(assembly_t *assembly){
   }
   return 0;
 }
+//-----------------------------------------------------------------------------
+int lasm2_assemble_patches(assembly_t *assembly){
+  if(assembly == NULL) return -1;
+  if(assembly->root_patch == NULL) return 0;
+  
+  assembly_patch_t* current_patch = assembly->root_patch;
+  while(current_patch != NULL){
+    hh_bigint_t* value = hh_bigint_new(0);
+    int res = lasm2_evaluate_expression(assembly, current_patch->expr, value);
+    
+    if(res < 0){
+      hh_bigint_free(value);
+      return res;
+    }
+    
+    // Resize value if necessary to match patch size
+    if(value->size < current_patch->size){
+      hh_bigint_resize(value, current_patch->size);
+    }else if(value->size > current_patch->size){
+      printf("[WARNING] Patch size mismatch at index %lu: value too large\n", current_patch->index);
+    }
+    
+    // Seek to patch position and write
+    fseek(assembly->config->out_file, current_patch->index, SEEK_SET);
+    fwrite(value->data, 1, current_patch->size, assembly->config->out_file);
+    
+    hh_bigint_free(value);
+    current_patch = current_patch->next;
+  }
+  
+  return 0;
+}
 
 //-----------------------------------------------------------------------------
 assembly_scope_t* lasm2_assembly_extract_scope_tree(lines_t* lines){
@@ -141,7 +193,7 @@ assembly_scope_t* lasm2_assembly_extract_scope_tree(lines_t* lines){
   if(assembly_scope->sub_scopes_size > 0){
     assembly_scope->sub_scopes = NEW(assembly_scope_t*, assembly_scope->sub_scopes_size);
   }else assembly_scope->sub_scopes = NULL;
-  for(int i = 0; i < assembly_scope->sub_scopes_size; i++){
+  for(size_t i = 0; i < assembly_scope->sub_scopes_size; i++){
     hh_darray_get(&sub_scopes_array, i, &assembly_scope->sub_scopes[i]);
   }
   hh_darray_deinit(&sub_scopes_array);
@@ -326,15 +378,24 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
           printf("Something is wrong with the expression.\n");
           err = -1; break;
         }
-        if(evaluate_token(assembly, expr->token, result)){err = -1; break;}
+        if(evaluate_token(expr->token, result)){err = -1; break;}
       }break;
       case WORD:{
         branch_t* branch = find_header_with_token_in_scopes(assembly->current_scope, expr->token);
-        if(branch->eval_flag){
-          hh_bigint_set_uint64(result, branch->location);
-          hh_bigint_resize(result, assembly->config->branch_default_size);
+        if(branch){
+          if(branch->eval_flag){
+            hh_bigint_set_uint64(result, branch->location);
+            hh_bigint_resize(result, assembly->config->branch_default_size);
+          }else{
+            // TODO
+            hh_bigint_set_uint64(result, 0);
+            hh_bigint_resize(result, assembly->config->branch_default_size);
+            err = 1; break;
+          }
         }else{
-          // TODO
+          print_error_loc(expr->token);
+          printf("Branch can't be reached or undefined.\n");
+          err = -1; break;
         }
       }break;
       default:{
@@ -366,7 +427,7 @@ branch_t* find_header_with_token_in_scopes(assembly_scope_t* assembly_scope, tok
   }
   //...
   branch_t* found_header = NULL;
-  for(int i = 0; i < assembly_scope->sub_scopes_size; i++){
+  for(size_t i = 0; i < assembly_scope->sub_scopes_size; i++){
     assembly_scope_t* asm_scope = assembly_scope->sub_scopes[i];
     if(strlen(name) == asm_scope->header->name->text_size && 
        memcmp(name, asm_scope->header->name->text, asm_scope->header->name->text_size) == 0){
@@ -421,13 +482,13 @@ void print_assembly_scope_indent(assembly_scope_t* assembly_scope, int indent){
   printf("\n");
   
   // Print all sub-scopes
-  for(int i = 0; i < assembly_scope->sub_scopes_size; i++){
+  for(size_t i = 0; i < assembly_scope->sub_scopes_size; i++){
     print_assembly_scope_indent(assembly_scope->sub_scopes[i], indent + 1);
   }
 }
 
 //-----------------------------------------------------------------------------
-int evaluate_token(assembly_t* assembler, token_t* token, hh_bigint_t* result){
+int evaluate_token(token_t* token, hh_bigint_t* result){
   if(token->id == NUMBER){
     char* text = NEW(char, token->text_size+1);
     memcpy(text, token->text, token->text_size); text[token->text_size] = 0;
