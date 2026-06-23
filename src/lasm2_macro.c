@@ -22,6 +22,8 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
     for(int i = 0; ((macro_t*)(*macro))[i].content_size != 0; i++){
       hh_darray_append(macros_array, &((macro_t*)(*macro))[i]);
     }
+    free(*macro);
+    *macro = NULL;
   }
   //===================================
   token_reader_t *reader = new_token_reader(tokens);

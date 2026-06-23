@@ -130,13 +130,20 @@ int main(int argc, char *argv[]){
   printf("Exiting...\n");
   // Deinitialize everything
   hh_argparse_deinit(parser);
-  //if(assembler.include_paths) free(assembler.include_paths);
+  for(int i = 0; assembler.include_paths[i]; i++){
+    free(assembler.include_paths[i]);
+  }
+  if(assembler.include_paths) free(assembler.include_paths);
   if(assembler.macros) free_macros(assembler.macros);
   if(assembler.output_file) fclose(assembler.output_file);
   if(assembler.input_file.text) free(assembler.input_file.text);
-  if(assembler.tokens) free(assembler.tokens);
+  if(assembler.tokens){
+    for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
+      free_token_parents(&assembler.tokens[i]);
+    }
+    free(assembler.tokens);
+  }
   if(assembly) lasm2_assembly_free(assembly);
-  //if(assembler.macros) free(assembler.macros);
   if(assembler.lines) free_lines(assembler.lines);
   //..,
   struct timespec end_time; timespec_get(&end_time, TIME_UTC); 

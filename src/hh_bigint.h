@@ -495,6 +495,7 @@ uint8_t hh_bigint_convert_from_string(hh_bigint_t *bigint, const char *str){
             if(c >= '0' && c <= '9'){
                 hh_bigint_init(&value, c - '0');
             }else{
+                hh_bigint_deinit(&value);
                 return 255;
             }
         }else if(base == 16){
@@ -505,6 +506,7 @@ uint8_t hh_bigint_convert_from_string(hh_bigint_t *bigint, const char *str){
             }else if(c >= 'A' && c <= 'F'){
                 hh_bigint_init(&value, c - 'A' + 10);
             }else{
+                hh_bigint_deinit(&value);
                 return 255; // Invalid character
             }
         }else if(base == 2){
@@ -513,14 +515,17 @@ uint8_t hh_bigint_convert_from_string(hh_bigint_t *bigint, const char *str){
             }else if(c == '1'){
                 hh_bigint_init(&value, 1);
             }else{
+                hh_bigint_deinit(&value);
                 return 255; // Invalid character
             }
         }
         for(size_t j = 0; j < i; j++){
             hh_bigint_t base_bigint; hh_bigint_init(&base_bigint, base);
             hh_bigint_multiply(&value, &base_bigint, &value); // Shift left
+            hh_bigint_deinit(&base_bigint);
         }
         hh_bigint_add(&value, bigint, bigint);
+        if(value.data) hh_bigint_deinit(&value);
     }
     hh_bigint_normalize(bigint);
     return 0;
@@ -541,14 +546,18 @@ uint8_t hh_bigint_multiply(const hh_bigint_t *a, const hh_bigint_t *b, hh_bigint
             hh_bigint_set_at(&product_bigint, (uint8_t)(product & 0xff), j);
             hh_bigint_set_at(&product_bigint, (uint8_t)(product >> 8), j+1);
             hh_bigint_add(&row, &product_bigint, &row);
+            hh_bigint_deinit(&product_bigint);
         }
         hh_bigint_resize(&row, row.size + i);
         memcpy(&row.data[i], &row.data[0], row.size - i);
         memset(&row.data[0], 0, i);
         hh_bigint_add(&row, &res, &res);
+        hh_bigint_deinit(&row);
     }
     hh_bigint_normalize(&res);
     hh_bigint_copy(result, &res);
+    hh_bigint_deinit(&res);
+    hh_bigint_deinit(&q);
     return 0;
 }
 //-----------------------------------------------------------------------------

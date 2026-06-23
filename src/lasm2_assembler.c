@@ -368,7 +368,9 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
       case QUEST:{
         if(expr->right->token->id == COLON){
           hh_bigint_t* zero = hh_bigint_new(0);
-          if(hh_bigint_is_equal(left_val, zero)){
+          uint8_t res = hh_bigint_is_equal(left_val, zero);
+          hh_bigint_free(zero);
+          if(res){
             err = lasm2_evaluate_expression(assembly, expr->right->right, result);
             if(err) break;
           }else{

@@ -2,7 +2,7 @@
 //<#"macro_include.la"#>
 // DEFINE - whenever assembler sees 'recall_name', it replaces with definition
 <#recall_name; 0xfa 0xfb#>
-recall_name; recall_name; recall_name
+recall_name; recall_name; recall_name;
 
 // DEFINE WITH ARGS - positional arguments 
 <#recall_name_args a, b, c;

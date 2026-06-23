@@ -265,6 +265,16 @@ uint8_t is_tokens_name_same(token_t* A, token_t* B){
 }
 
 //-----------------------------------------------------------------------------
+void free_token_parents(token_t* tokens){
+	if(!tokens) return;
+	if(tokens->parent_copy){
+		free_token_parents(tokens->parent_copy);
+		free(tokens->parent_copy);
+		tokens->parent_copy = NULL;
+	}
+}
+
+//-----------------------------------------------------------------------------
 uint8_t is_alpha(char c){
 	if(((uint8_t)c <= 90 && (uint8_t)c >= 65) || 
 	((uint8_t)c <= 122 && (uint8_t)c >= 97)) return 1;
