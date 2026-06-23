@@ -6,25 +6,26 @@ recall_name; recall_name; recall_name
 
 // DEFINE WITH ARGS - positional arguments 
 <#recall_name_args a, b, c;
-  DEFINE_ARGS; 0; a; b; c; 0
+  0xffffff; 0; a; b; c; 0
 #>
 recall_name_args 1, 2, 3 
 
 // IF DEFINE - controller for macro parser to enable or block code
 <#this;0xabc#>
-<#? this; can do this
+<#? this; recall_name; 0x2
 #>      // if 'this' is defined
-<#! that; this; do can
+<#! that; 0x3; recall_name;
 #>    // if 'that' not defined
 
 
 <#thats; 88#>
-<#X; thats; x; <#Y; 5#>#>
+<#X; recall_name; 123; <#Y; 5#>#>
 
-Y
-X
-Y
+<#HOME|home; "home"#>
 
-ADC x, y;
-LDA 3
-TBA; TAB;
+HOME; 
+this;
+home;
+// ADC x, y;
+// LDA 3
+// TBA; TAB;

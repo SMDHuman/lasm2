@@ -10,7 +10,8 @@
 //-----------------------------------------------------------------------------
 
 typedef struct{
-  token_t name;
+  token_t* names;
+  size_t name_count;
   token_t* args; // <xxx <arg1>, <arg2>, ...>
   token_t* content; // <...>
   size_t args_size;

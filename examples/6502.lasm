@@ -1,0 +1,75 @@
+
+<# IMM; 0#>
+<# ZP ; 1#>
+<# ZPX; 2#>
+<# AB ; 3#>
+<# ABX; 4#>
+<# ABY; 5#>
+<# INX; 6#>
+<# INY; 7#>
+
+<# ADDR_MODE_IMM val; (val)$1#>
+<# ADDR_MODE_ZP  val; (val)$1#>
+<# ADDR_MODE_ZPX val; (val)$1#>
+<# ADDR_MODE_AB  val; (val)$2#>
+<# ADDR_MODE_ABX val; (val)$2#>
+<# ADDR_MODE_ABY val; (val)$2#>
+<# ADDR_MODE_INX val; (val)$1#>
+<# ADDR_MODE_INY val; (val)$1#>
+
+<# ADC | adc; #>
+<# AND | and; #>
+<# ASL | asl; #>
+<# BCC | bcc; #>
+<# BCS | bcs; #>
+<# BEQ | beq; #>
+<# BIT | bit; #>
+<# BMI | bmi; #>
+<# BNE | bne; #>
+<# BPL | bpl; #>
+<# BRK | brk; #>
+<# BVC | bvc; #>
+<# BVS | bvs; #>
+<# CLC | clc; #>
+<# CLD | cld; #>
+<# CLI | cli; #>
+<# CLV | clv; #>
+<# CMP | cmp; #>
+<# CPX | cpx; #>
+<# CPY | cpy; #>
+<# DEC | dec; #>
+<# DEX | dex; #>
+<# DEY | dey; #>
+<# EOR | eor; #>
+<# INC | inc; #>
+<# INX | inx; #>
+<# INY | iny; #>
+<# JMP | jmp; #>
+<# JSR | jsr; #>
+<# LDA | lda; #>
+<# LDX | ldx; #>
+<# LDY | ldy; #>
+<# LSR | lsr; #>
+<# NOP | nop; #>
+<# ORA | ora; #>
+<# PHA | pha; #>
+<# PHP | php; #>
+<# PLA | pla; #>
+<# PLP | plp; #>
+<# ROL | rol; #>
+<# ROR | ror; #>
+<# RTI | rti; #>
+<# RTS | rts; #>
+<# SBC | sbc; #>
+<# SEC | sec; #>
+<# SED | sed; #>
+<# SEI | sei; #>
+<# STA | sta; #>
+<# STX | stx; #>
+<# STY | sty; #>
+<# TAX | tax; #>
+<# TAY | tay; #>
+<# TSX | tsx; #>
+<# TXA | txa; #>
+<# TXS | txs; #>
+<# TYA | tya; #>
