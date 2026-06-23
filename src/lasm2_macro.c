@@ -39,7 +39,7 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
         m.names = NEW(token_t, m.name_count);
         //m.names[0] = *token_reader_next(reader, 1);
         if(m.name_count > 1){
-          for(int i = 0; i < m.name_count; i++){
+          for(size_t i = 0; i < m.name_count; i++){
             memcpy(&m.names[i], token_reader_next(reader, 1), sizeof(token_t));
             if(!token_reader_expect_either(reader, BITW_OR, NEWLINE, 0)) return -1;
             token_reader_next(reader, 1);
@@ -190,7 +190,7 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
       //=========================================
       //Skip include type
       else if(token_reader_peek(reader, 0)->id == STRING_DB || token_reader_peek(reader, 0)->id == STRING_SG){
-        token_t name = *token_reader_next(reader, 1);
+        token_reader_next(reader, 1); // skip name
         token_reader_skip_until_not(reader, NEWLINE);
         if(!token_reader_expect(reader, MACRO_C, 0)) return -1;
         token_reader_next(reader, 1); // skip macro closer
@@ -488,6 +488,10 @@ void free_macro(macro_t* macro){
   // Free content array if allocated
   if(macro->content != NULL){
     free(macro->content);
+  }
+  // Free content array if allocated
+  if(macro->names != NULL){
+    free(macro->names);
   }
   
   // Don't free macro->name since it's not allocated (it's a copy of a token)
