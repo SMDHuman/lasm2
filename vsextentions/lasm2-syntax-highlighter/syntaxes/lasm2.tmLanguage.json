@@ -1,0 +1,335 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "LASM2",
+  "settings": [
+    {
+      "settings": {
+        "background": "#1e1e1e",
+        "caret": "#aeafad",
+        "foreground": "#d4d4d4",
+        "lineHighlight": "#ffffff0d",
+        "selection": "#264f78"
+      }
+    },
+    {
+      "scope": "comment",
+      "settings": {
+        "foreground": "#6a9955"
+      }
+    },
+    {
+      "scope": "string",
+      "settings": {
+        "foreground": "#ce9178"
+      }
+    },
+    {
+      "scope": "constant.numeric",
+      "settings": {
+        "foreground": "#b5cea8"
+      }
+    },
+    {
+      "scope": "entity.name.tag",
+      "settings": {
+        "foreground": "#ce9178",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "scope": "variable.other.member",
+      "settings": {
+        "foreground": "#d4d4d4"
+      }
+    },
+    {
+      "scope": "punctuation.accessor",
+      "settings": {
+        "foreground": "#d4d4d4"
+      }
+    },
+    {
+      "scope": "keyword.operator.size",
+      "settings": {
+        "foreground": "#569cd6",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "scope": "keyword.operator.ternary",
+      "settings": {
+        "foreground": "#c586c0"
+      }
+    },
+    {
+      "scope": "keyword.operator.macro-conditional",
+      "settings": {
+        "foreground": "#f44747",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "scope": "keyword.control.conditional",
+      "settings": {
+        "foreground": "#569cd6"
+      }
+    },
+    {
+      "scope": "keyword",
+      "settings": {
+        "foreground": "#569cd6"
+      }
+    },
+    {
+      "scope": "punctuation.definition.macro",
+      "settings": {
+        "foreground": "#c586c0",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "scope": "meta.macro",
+      "settings": {
+        "foreground": "#d7ba7d"
+      }
+    },
+    {
+      "scope": "variable.other",
+      "settings": {
+        "foreground": "#9cdcfe"
+      }
+    },
+    {
+      "scope": "entity.name.function",
+      "settings": {
+        "foreground": "#dcdcaa"
+      }
+    }
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#macros"
+    },
+    {
+      "include": "#property-access"
+    },
+    {
+      "include": "#macro-call"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#labels"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#size-operator"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#punctuation"
+    },
+    {
+      "include": "#identifiers"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.lasm2",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "macros": {
+      "patterns": [
+        {
+          "name": "meta.macro.lasm2",
+          "begin": "<#",
+          "end": "#>",
+          "applyEndPatternLast": true,
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.macro.lasm2"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.macro.lasm2"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#macros"
+            },
+            {
+              "name": "keyword",
+              "match": "(?<=<#)\\s*[a-zA-Z_][a-zA-Z0-9_]*"
+            },
+            {
+              "match": "([?!])(\\s+)([a-zA-Z_][a-zA-Z0-9_]*)",
+              "captures": {
+                "1": {
+                  "name": "keyword.operator.macro-conditional.lasm2"
+                },
+                "3": {
+                  "name": "keyword"
+                }
+              }
+            },
+            {
+              "name": "keyword.operator.macro-conditional.lasm2",
+              "match": "=>|=="
+            },
+            {
+              "include": "#macro-call"
+            },
+            {
+              "include": "#strings"
+            },
+            {
+              "include": "#comments"
+            },
+            {
+              "include": "#numbers"
+            },
+            {
+              "include": "#size-operator"
+            },
+            {
+              "include": "#operators"
+            },
+            {
+              "include": "#punctuation"
+            }
+          ]
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.lasm2",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.lasm2",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.lasm2",
+          "match": "\\b0[xX][0-9a-fA-F]+\\b"
+        },
+        {
+          "name": "constant.numeric.binary.lasm2",
+          "match": "\\b0[bB][01]+\\b"
+        },
+        {
+          "name": "constant.numeric.decimal.lasm2",
+          "match": "\\b\\d+\\b"
+        }
+      ]
+    },
+    "labels": {
+      "patterns": [
+        {
+          "name": "entity.name.tag.lasm2",
+          "match": "(?<![a-zA-Z0-9_])\\.[a-zA-Z_][a-zA-Z0-9_]*(?:\\[[^\\]]*\\])?"
+        }
+      ]
+    },
+    "property-access": {
+      "patterns": [
+        {
+          "name": "variable.other.member.lasm2",
+          "match": "[a-zA-Z_][a-zA-Z0-9_]*\\.[a-zA-Z_][a-zA-Z0-9_]*"
+        }
+      ]
+    },
+    "macro-call": {
+      "patterns": [
+        {
+          "name": "entity.name.function.lasm2",
+          "match": "(?<=;)\\s*[a-zA-Z_][a-zA-Z0-9_]*\\b(?=\\s*[;,]|\\s+[a-zA-Z0-9_(])"
+        },
+        {
+          "name": "entity.name.function.lasm2",
+          "match": "^\\s*[a-zA-Z_][a-zA-Z0-9_]*\\b(?=\\s*[;,]|\\s+[a-zA-Z0-9_(])"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.comparison.lasm2",
+          "match": "(==|!=|<=|>=|=>|<|>)"
+        },
+        {
+          "name": "keyword.operator.arithmetic.lasm2",
+          "match": "(\\+|-|\\*|/|%|\\$)"
+        },
+        {
+          "name": "keyword.operator.logical.lasm2",
+          "match": "(&|\\||\\^|~|!)"
+        },
+        {
+          "name": "keyword.operator.bitshift.lasm2",
+          "match": "(<<|>>)"
+        },
+        {
+          "name": "keyword.operator.ternary.lasm2",
+          "match": "(\\?|\\:)"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.lasm2",
+          "match": "[;,]"
+        },
+        {
+          "name": "punctuation.bracket.curly.lasm2",
+          "match": "[{}]"
+        },
+        {
+          "name": "punctuation.bracket.square.lasm2",
+          "match": "[\\[\\]]"
+        },
+        {
+          "name": "punctuation.bracket.round.lasm2",
+          "match": "[()]"
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "meta.function-call.lasm2",
+          "match": "[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\()"
+        },
+        {
+          "name": "variable.other.lasm2",
+          "match": "[a-zA-Z_][a-zA-Z0-9_]*"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.lasm2"
+}

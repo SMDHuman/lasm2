@@ -25,6 +25,7 @@ void help_command(const char *invoc_name);
 int main(int argc, char *argv[]){
   struct timespec start_time; timespec_get(&start_time, TIME_UTC); 
   int exit_code = 0;
+  assembly_t* assembly = NULL;
   // Parse Arguments
   hh_argparse_t *parser = hh_argparse_init(argc, argv);
   if(parser == NULL){
@@ -113,7 +114,7 @@ int main(int argc, char *argv[]){
   
   printf("[INFO] Assembling\n");
   assembler.output_file = fopen(output_filename, "w");
-  assembly_t* assembly = lasm2_assembly_new(assembler.lines, &(assembly_config_t){.branch_default_size=2,.out_file=assembler.output_file});
+  assembly = lasm2_assembly_new(assembler.lines, &(assembly_config_t){.branch_default_size=2,.out_file=assembler.output_file});
   exit_code = lasm2_assemble(assembly);
   if(exit_code != 0){
     goto exit_assembler;

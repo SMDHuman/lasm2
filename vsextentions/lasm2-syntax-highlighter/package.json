@@ -1,0 +1,25 @@
+{
+  "name": "lasm2-syntax-highlighter",
+  "displayName": "lasm2-syntax-highlighter",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.125.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "lasm2",
+      "aliases": ["LOTP Assembler 2", "lasm2", "lasm"],
+      "extensions": [".lasm2", ".lasm"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "lasm2",
+      "scopeName": "source.lasm2",
+      "path": "./syntaxes/lasm2.tmLanguage.json"
+    }]
+  }
+}

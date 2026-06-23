@@ -8,15 +8,13 @@ recall_name; recall_name; recall_name
 <#recall_name_args a, b, c;
   DEFINE_ARGS; 0; a; b; c; 0
 #>
-recall_name_args(1, 2, 3)
+recall_name_args 1, 2, 3 
 
 // IF DEFINE - controller for macro parser to enable or block code
 <#this;0xabc#>
-<#
-?this; can do this
+<#? this; can do this
 #>      // if 'this' is defined
-<#!
-that; this; do can
+<#! that; this; do can
 #>    // if 'that' not defined
 
 
@@ -27,4 +25,6 @@ Y
 X
 Y
 
-ADC xy
+ADC x, y;
+LDA 3
+TBA; TAB;

@@ -423,7 +423,8 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
   if(err == -1){
     print_error_loc(expr->token);
     printf("Something unexpected happen while evaluating this expression.\n");
-  }else if(err < 0){
+  }
+  if(err < 0){
     return err-1;
   }
   return err;

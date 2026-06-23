@@ -15,12 +15,15 @@ static int parse_line(token_reader_t* reader, lines_t* lines, scope_t* parent);
 
 //-----------------------------------------------------------------------------
 static int parse_expression(token_reader_t* reader, expr_node_t* root_expr){
+  // print_single_token(token_reader_peek(reader, 0));printf("\n");
   expr_node_t* buffer_expr = parse_expression_right(reader, 2.);
-  memcpy(root_expr, buffer_expr, sizeof(expr_node_t));
-  free(buffer_expr);
+  if(buffer_expr){
+    memcpy(root_expr, buffer_expr, sizeof(expr_node_t));
+    free(buffer_expr);
+  }
   while(1){
     if(token_reader_EOF(reader)) break;
-    if(token_reader_peek(reader, 0)->id == NEWLINE) break;
+    if(token_reader_peek(reader, 0)->id == NEWLINE) {break;}
     if(token_reader_peek(reader, 0)->id == SBRAC_C) {token_reader_next(reader, 1); break;};
     if(token_reader_peek(reader, 0)->id == RBRAC_C) {token_reader_next(reader, 1); break;}
     if(token_prc(token_reader_peek(reader, 0)) <= 0) break;
@@ -40,7 +43,7 @@ static int parse_expression(token_reader_t* reader, expr_node_t* root_expr){
 static expr_node_t* parse_expression_right(token_reader_t* reader, float min_prc){
   // print_single_token(token_reader_peek(reader, 0));printf("\n");
   if(token_reader_EOF(reader)) return NULL;
-  if(token_reader_peek(reader, 0)->id == NEWLINE) return NULL;
+  if(token_reader_peek(reader, 0)->id == NEWLINE){return NULL;}
   expr_node_t* new_expr = NEW(expr_node_t, 1);
   new_expr->left = 0; 
   new_expr->right = 0; 
@@ -52,12 +55,17 @@ static expr_node_t* parse_expression_right(token_reader_t* reader, float min_prc
     new_expr->token = token_reader_peek(reader, 0);
     token_reader_next(reader, 1);
   }
-  //...
+  // Parse parenthesis
   if(token_reader_peek(reader, 0)->id == RBRAC_O){
-    token_reader_next(reader, 1);
+    token_t* opener = token_reader_next(reader, 1);
     parse_expression(reader, new_expr);
+    if(token_reader_peek(reader, -1)->id != RBRAC_C){
+      print_error_loc(opener);
+      printf("Can't find a closing parenthesis ')'\n");
+      return NULL;
+    }
   }
-  //...
+  // Parse indexing parenthesis
   if(token_reader_peek(reader, 0)->id == SBRAC_O){
     token_t* index_token = token_reader_next(reader, 1);
     expr_node_t* new_op_expr= NEW(expr_node_t, 1);
@@ -66,6 +74,11 @@ static expr_node_t* parse_expression_right(token_reader_t* reader, float min_prc
     new_op_expr->right = NEW(expr_node_t, 1);
     parse_expression(reader, new_op_expr->right);
     new_expr = new_op_expr;
+    if(token_reader_peek(reader, -1)->id != SBRAC_C){
+      print_error_loc(index_token);
+      printf("Can't find a closing parenthesis ']'\n");
+      return NULL;
+    }
   }
   // Check for prefixes
   if(min_prc > 1 && token_prc(token_reader_peek(reader, 0)) > 0 && new_expr->token == NULL){
