@@ -26,7 +26,7 @@ It has all the necessary macros that we love from the C language, namespaces for
 You can write comments with the good old ```//``` double slash. Usually, you do not need to use ```;``` at the end of your lines. New lines are sufficient, but if you want to write multiple statements on one line, you can separate them with semicolons.
 ```
 // My comment on this code is NULL
-lda# 3; sta 0
+lda 3; sta 0
 adc 1; sta 1 //Things happen
 ```
 
@@ -41,10 +41,10 @@ Macros are defined inside ```<# #>``` structure. There are 4 main types of macro
 recall_name; recall_name
 
 // DEFINE WITH ARGS - positional arguments 
-<#recall_name arg_name another_arg;
+<#recall_name arg_name, another_arg;
   and other things arg_name with another_arg
 #>
-recall_name (fizz, buzz)
+recall_name fizz, buzz
 
 // IF DEFINE - controller for macro parser to enable or block code
 <#?this can do this#>      // if 'this' is defined
@@ -103,14 +103,9 @@ You can add new functions and instructions with just using the same macro tools 
 // 6502 Add Memory to Accumulator with Carry Instruction Implementation
 <#ADC_I _i; 0x69; _i#>
 <#ADC ad;
-  ?($ad == 1) 0x65; ad
-  ?($ad == 2) 0x6D; ad$2
-  ?($ad => 2) <#ERROR; address is too log#>
-#>
-<#ADC_X ad; 
-  ?($ad == 1) 0x75; ad
-  ?($ad == 2) 0x7D; ad$2
-  ?($ad => 2) <#ERROR address is too log#>
+  ($ad == 1) ? 0x65: ad$2
+  ($ad == 2) ? 0x6D: ad$2
+  ($ad => 2) ? <#ERROR; "address is too log"#>
 #>
 <#ADC_Y ad; 0x79; ad$2 #>
 <#ADC_IX ad; 0x61; ad$2 #>
