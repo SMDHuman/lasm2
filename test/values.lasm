@@ -29,7 +29,7 @@ human
 
 .human{
   0xfc
-  .liver{
+  .lung{
     .left; 0
     .right; 0
     human
@@ -39,5 +39,5 @@ human
   0xfb
   bone
 }
-human.liver
+human.lung
 

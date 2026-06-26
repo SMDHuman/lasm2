@@ -138,9 +138,9 @@ int main(int argc, char *argv[]){
   if(assembler.output_file) fclose(assembler.output_file);
   if(assembler.input_file.text) free(assembler.input_file.text);
   if(assembler.tokens){
-    for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
-      free_token_parents(&assembler.tokens[i]);
-    }
+    // for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
+    //   free_token_parents(&assembler.tokens[i]);
+    // }
     free(assembler.tokens);
   }
   if(assembly) lasm2_assembly_free(assembly);

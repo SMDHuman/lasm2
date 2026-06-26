@@ -43,7 +43,7 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
         if(m.name_count > 1){
           for(size_t i = 0; i < m.name_count; i++){
             memcpy(&m.names[i], token_reader_next(reader, 1), sizeof(token_t));
-            if(!token_reader_expect_either(reader, BITW_OR, NEWLINE, 0)) return -1;
+            if(!(!((i-1) == m.name_count) || token_reader_expect_either(reader, BITW_OR, NEWLINE, 0))) return -1;
             token_reader_next(reader, 1);
           }
           token_reader_next(reader, -1);

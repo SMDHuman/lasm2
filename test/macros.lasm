@@ -21,11 +21,11 @@ recall_name_args 1, 2, 3
 <#thats; 88#>
 <#X; recall_name; 123; <#Y; 5#>#>
 
-<#HOME|home; "home"#>
+<#HOME|home is; "home"; is ;"home"#>
 
-HOME; 
+HOME "this"; 
 this;
-home;
+home "is";
 // ADC x, y;
 // LDA 3
 // TBA; TAB;
