@@ -213,7 +213,9 @@ static float token_prc(token_t *token){
   if(token->id == EQUAL || token->id == NOTEQUAL) return precedence;
   precedence++;
   if(token->id == BITW_OR) return precedence;
+  precedence++;
   if(token->id == BITW_XOR) return precedence;
+  precedence++;
   if(token->id == BITW_AND) return precedence;
   precedence++;
   if(token->id == BITSHIFT_L || token->id == BITSHIFT_R) return precedence;
