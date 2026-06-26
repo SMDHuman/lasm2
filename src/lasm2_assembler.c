@@ -94,10 +94,10 @@ int lasm2_assemble(assembly_t *assembly){
           assembly->leaf_patch = new_patch;
         }
       }
-      if(value->sign){
-        hh_bigint_reverse_bits(value);
-        hh_bigint_add_int32(value, -1);
-      }
+      // if(value->sign){
+      //   hh_bigint_reverse_bits(value);
+      //   hh_bigint_add_int32(value, -1);
+      // }
       fwrite(value->data, 1, value->size, assembly->config->out_file);
       // hh_bigint_print_hex(value);
       hh_bigint_free(value);
@@ -264,21 +264,18 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
           }else{
             result->data[0] = 0;
           }
-          result->sign = 0;
         }else{ err = -1; break; }
       }break;
       case BITSHIFT_L:{
         if(left_val && right_val){
           uint64_t amount = hh_bigint_get_uint64(right_val);
           if(hh_bigint_shift_left(left_val, amount, result)){err = -1;break;}
-          result->sign = 0;
         }else{ err = -1; break; }
       }break;
       case BITSHIFT_R:{
         if(left_val && right_val){
           uint64_t amount = hh_bigint_get_uint64(right_val);
           if(hh_bigint_shift_right(left_val, amount, result)){err = -1;break;}
-          result->sign = 0;
         }else{ err = -1; break; }
       }break;
       case EXCLA:{
@@ -287,40 +284,27 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
           for(size_t i = 0; i < result->size; i++){
             result->data[i] = ~result->data[i];
           }
-          result->sign = 0;
         }else{ err = -1; break; }
       }break;
       case BITW_AND:{
         if(left_val && right_val){
           if(left_val->size > right_val->size) hh_bigint_resize(right_val, left_val->size);
           if(left_val->size < right_val->size) hh_bigint_resize(left_val, right_val->size);
-          hh_bigint_copy(result, left_val);
-          for(size_t i = 0; i < result->size; i++){
-            result->data[i] = result->data[i] & right_val->data[i];
-          }
-          result->sign = 0;
+          hh_bigint_bitwise_and(left_val, right_val, result);
         }else{ err = -1; break; }
       }break;
       case BITW_OR:{
         if(left_val && right_val){
           if(left_val->size > right_val->size) hh_bigint_resize(right_val, left_val->size);
           if(left_val->size < right_val->size) hh_bigint_resize(left_val, right_val->size);
-          hh_bigint_copy(result, left_val);
-          for(size_t i = 0; i < result->size; i++){
-            result->data[i] = result->data[i] | right_val->data[i];
-          }
-          result->sign = 0;
+          hh_bigint_bitwise_or(left_val, right_val, result);
         }else{ err = -1; break; }
       }break;
       case BITW_XOR:{
         if(left_val && right_val){
           if(left_val->size > right_val->size) hh_bigint_resize(right_val, left_val->size);
           if(left_val->size < right_val->size) hh_bigint_resize(left_val, right_val->size);
-          hh_bigint_copy(result, left_val);
-          for(size_t i = 0; i < result->size; i++){
-            result->data[i] = result->data[i] ^ right_val->data[i];
-          }
-          result->sign = 0;
+          hh_bigint_bitwise_xor(left_val, right_val, result);
         }else{ err = -1; break; }
       }break;
       case DOLLAR:{
@@ -328,49 +312,42 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
           uint64_t size = left_val->size;
           hh_bigint_set_uint64(result, size);
           hh_bigint_normalize(result);
-          result->sign = 0;
         }
         else if(left_val && right_val){
           uint64_t size = hh_bigint_get_uint64(right_val);
           hh_bigint_copy(result, left_val);
           int res = (int)hh_bigint_resize(result, size);
           if(res) return res;
-          result->sign = 0;
         }else{ err = -1; break; }
       }break;
       case EQUAL:{
         if(left_val && right_val){
           hh_bigint_resize(result, 1);
           result->data[0] = hh_bigint_is_equal(left_val, right_val);
-          result->sign = 0;
         }else{ err = -1; break; }
       }break;
       case SMALLER:{
         if(left_val && right_val){
           hh_bigint_resize(result, 1);
           result->data[0] = hh_bigint_is_smaller(left_val, right_val);
-          result->sign = 0;
         }else{ err = -1; break; }
       }break;
       case GREATER:{
         if(left_val && right_val){
           hh_bigint_resize(result, 1);
           result->data[0] = hh_bigint_is_bigger(left_val, right_val);
-          result->sign = 0;
         }else{ err = -1; break; }
       }break;
       case EQ_SMALLER:{
         if(left_val && right_val){
           hh_bigint_resize(result, 1);
           result->data[0] = !hh_bigint_is_bigger(left_val, right_val);
-          result->sign = 0;
         }else{ err = -1; break; }
       }break;
       case EQ_GREATER:{
         if(left_val && right_val){
           hh_bigint_resize(result, 1);
           result->data[0] = !hh_bigint_is_smaller(left_val, right_val);
-          result->sign = 0;
         }else{ err = -1; break; }
       }break;
       case COLON:{
@@ -434,6 +411,7 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
     }
   }
   //...
+  hh_bigint_sign_normalize(result);
   if(left_val) hh_bigint_free(left_val);
   if(right_val) hh_bigint_free(right_val);
   if(err == -1){

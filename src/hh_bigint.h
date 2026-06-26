@@ -48,9 +48,10 @@
 #define hbi_shift_left hh_bigint_shift_left
 #define hbi_shift_right hh_bigint_shift_right
 #define hbi_normalize hh_bigint_normalize
-#define hh_bigint_divide hbi_divide
-#define hh_bigint_modulo hbi_modulo
-#define hh_bigint_reverse_bits hbi_reverse_bits
+#define hbi_sign_normalize hh_bigint_sign_normalize
+#define hbi_divide hh_bigint_divide
+#define hbi_modulo hh_bigint_modulo
+#define hbi_reverse_bits hh_bigint_reverse_bits
 #endif
 //-----------------------------------------------------------------------------
 // Big integer structure
@@ -101,6 +102,7 @@ uint8_t hh_bigint_bitwise_or(const hh_bigint_t *a, const hh_bigint_t *b, hh_bigi
 uint8_t hh_bigint_bitwise_xor(const hh_bigint_t *a, const hh_bigint_t *b, hh_bigint_t *result);
 uint8_t hh_bigint_bitwise_and(const hh_bigint_t *a, const hh_bigint_t *b, hh_bigint_t *result);
 uint8_t hh_bigint_normalize(hh_bigint_t *bigint);
+uint8_t hh_bigint_sign_normalize(hh_bigint_t *bigint);
 uint8_t hh_bigint_divide(const hh_bigint_t *a, const hh_bigint_t *b, hh_bigint_t *result);
 uint8_t hh_bigint_modulo(const hh_bigint_t *a, const hh_bigint_t *b, hh_bigint_t *result);
 uint8_t hh_bigint_reverse_bits(hh_bigint_t *bigint);
@@ -623,42 +625,54 @@ uint8_t hh_bigint_shift_right(const hh_bigint_t *bigint, const uint64_t position
 uint8_t hh_bigint_bitwise_or(const hh_bigint_t *a, const hh_bigint_t *b, hh_bigint_t *result){
     if(a == NULL || b == NULL || result == NULL) return 255;
 
-    hh_bigint_init(result, 0);
-    hh_bigint_resize(result, MAX(a->size, b->size));
+    hh_bigint_t res; 
+    hh_bigint_init(&res, 0);
+    hh_bigint_resize(&res, MAX(a->size, b->size));
 
-    for(size_t i = 0; i < result->size; i++){
+    for(size_t i = 0; i < res.size; i++){
         uint8_t a_bit = (i < a->size) ? hh_bigint_get_at(a, i) : 0;
         uint8_t b_bit = (i < b->size) ? hh_bigint_get_at(b, i) : 0;
-        hh_bigint_set_at(result, a_bit | b_bit, i);
+        hh_bigint_set_at(&res, a_bit | b_bit, i);
     }
+    hh_bigint_sign_normalize(&res);
+    hh_bigint_copy(result, &res);
+    hh_bigint_deinit(&res);
     return 0;
 }
 //-----------------------------------------------------------------------------
 uint8_t hh_bigint_bitwise_xor(const hh_bigint_t *a, const hh_bigint_t *b, hh_bigint_t *result){
     if(a == NULL || b == NULL || result == NULL) return 255;
 
-    hh_bigint_init(result, 0);
-    hh_bigint_resize(result, MAX(a->size, b->size));
+    hh_bigint_t res; 
+    hh_bigint_init(&res, 0);
+    hh_bigint_resize(&res, MAX(a->size, b->size));
 
-    for(size_t i = 0; i < result->size; i++){
+    for(size_t i = 0; i < res.size; i++){
         uint8_t a_bit = (i < a->size) ? hh_bigint_get_at(a, i) : 0;
         uint8_t b_bit = (i < b->size) ? hh_bigint_get_at(b, i) : 0;
-        hh_bigint_set_at(result, a_bit ^ b_bit, i);
+        hh_bigint_set_at(&res, a_bit ^ b_bit, i);
     }
+    hh_bigint_sign_normalize(&res);
+    hh_bigint_copy(result, &res);
+    hh_bigint_deinit(&res);
     return 0;
 }
 //-----------------------------------------------------------------------------
 uint8_t hh_bigint_bitwise_and(const hh_bigint_t *a, const hh_bigint_t *b, hh_bigint_t *result){
     if(a == NULL || b == NULL || result == NULL) return 255;
 
-    hh_bigint_init(result, 0);
-    hh_bigint_resize(result, MAX(a->size, b->size));
+    hh_bigint_t res;
+    hh_bigint_init(&res, 0);
+    hh_bigint_resize(&res, MAX(a->size, b->size));
 
-    for(size_t i = 0; i < result->size; i++){
+    for(size_t i = 0; i < res.size; i++){
         uint8_t a_bit = (i < a->size) ? hh_bigint_get_at(a, i) : 0;
         uint8_t b_bit = (i < b->size) ? hh_bigint_get_at(b, i) : 0;
-        hh_bigint_set_at(result, a_bit & b_bit, i);
+        hh_bigint_set_at(&res, a_bit & b_bit, i);
     }
+    hh_bigint_sign_normalize(&res);
+    hh_bigint_copy(result, &res);
+    hh_bigint_deinit(&res);
     return 0;
 }
 //-----------------------------------------------------------------------------
@@ -674,6 +688,19 @@ uint8_t hh_bigint_normalize(hh_bigint_t *bigint){
     }
     if(new_size < bigint->size){
         hh_bigint_resize(bigint, new_size);
+    }
+    return 0;
+}
+//-----------------------------------------------------------------------------
+uint8_t hh_bigint_sign_normalize(hh_bigint_t *bigint){
+    if(bigint->size >= 1){
+        if(bigint->sign == 1){
+            //add_byte
+            bigint->sign = 0;
+            if(bigint->data[bigint->size-1]>>7) hh_bigint_resize(bigint, bigint->size+1);
+            hh_bigint_reverse_bits(bigint);
+            hh_bigint_add_int32(bigint, 1);
+        }
     }
     return 0;
 }
