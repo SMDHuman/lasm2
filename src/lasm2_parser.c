@@ -51,7 +51,8 @@ static expr_node_t* parse_expression_right(token_reader_t* reader, float min_prc
   if(token_reader_peek(reader, 0)->id == NUMBER || 
      token_reader_peek(reader, 0)->id == STRING_DB || 
      token_reader_peek(reader, 0)->id == STRING_SG || 
-     token_reader_peek(reader, 0)->id == WORD){
+     token_reader_peek(reader, 0)->id == WORD || 
+     token_reader_peek(reader, 0)->id == AT_SIGN){
     new_expr->token = token_reader_peek(reader, 0);
     token_reader_next(reader, 1);
   }

@@ -223,6 +223,15 @@ uint8_t lasm_tokenizer(lasm_file_t* file, token_t** tokens){
 				token.text_size++;
 			}
 		}
+		// Check for words in AT mode
+		if(file_text[0] == '@'){
+			token.id = AT_SIGN;
+			token.text = file_text;
+			token.text_size = 1;
+			while(is_alphanum(file_text[token.text_size]) || file_text[token.text_size] == '_'  || file_text[token.text_size] == '.'){
+				token.text_size++;
+			}
+		}
 		// Check for words
 		if(is_alpha(file_text[0]) || file_text[0] == '_'){
 			token.id = WORD;

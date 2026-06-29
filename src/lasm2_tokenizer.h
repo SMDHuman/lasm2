@@ -56,6 +56,7 @@ typedef enum{
 	EQ_SMALLER,
 	EQ_GREATER,
 	ASSIGN,
+	AT_SIGN
 }TOKEN_ID;
 
 typedef struct{

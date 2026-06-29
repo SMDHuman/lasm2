@@ -94,6 +94,7 @@ int lasm2_assemble(assembly_t *assembly){
           assembly->leaf_patch = new_patch;
         }
       }
+      hh_bigint_sign_normalize(value);
       // if(value->sign){
       //   hh_bigint_reverse_bits(value);
       //   hh_bigint_add_int32(value, -1);
@@ -356,6 +357,18 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
           printf("Expecting expressions between colon ':'\n");
         }
       }break;
+      case AT_SIGN:{
+        if(expr->token->text[1] == 'c'){
+          uint64_t current = ftell(assembly->config->out_file);
+          hh_bigint_set_uint64(result, current);
+          hh_bigint_normalize(result);
+        }else{
+          print_error_loc(expr->token);
+          printf("Unkown at sign\n");
+          err = -1;
+          break;
+        }
+      }break;
       case QUEST:{
         if(expr->right->token->id == COLON){
           hh_bigint_t* zero = hh_bigint_new(0);
@@ -411,7 +424,6 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
     }
   }
   //...
-  hh_bigint_sign_normalize(result);
   if(left_val) hh_bigint_free(left_val);
   if(right_val) hh_bigint_free(right_val);
   if(err == -1){
