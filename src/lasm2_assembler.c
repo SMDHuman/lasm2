@@ -362,6 +362,22 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
           uint64_t current = ftell(assembly->config->out_file);
           hh_bigint_set_uint64(result, current);
           hh_bigint_normalize(result);
+        }else if(expr->token->text[1] == 's'){
+          branch_t* branch = assembly->current_scope->header;
+          if(branch){
+            if(branch->eval_flag){
+              hh_bigint_set_uint64(result, branch->location);
+              hh_bigint_resize(result, assembly->config->branch_default_size);
+            }else{
+              hh_bigint_set_uint64(result, 0);
+              hh_bigint_resize(result, assembly->config->branch_default_size);
+              err = 1; break;
+            }
+          }else{
+            print_error_loc(expr->token);
+            printf("Current scope can't be reached\n");
+            err = -1; break;
+          }
         }else{
           print_error_loc(expr->token);
           printf("Unkown at sign\n");
