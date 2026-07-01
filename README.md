@@ -61,7 +61,8 @@ Everything that doesn't belong to instruction words will be parsed as an express
 
 // Manipulate values with special operations
 "text with words"[2]  // Isolates character 'x' by index
-"Hello Code"[3:5]     // Isolates character 'lo' by range of indexes
+"Hello Code"[2:4]     // Isolates character 'llo' by range of indexes
+"Hello Code"[4:2]     // Isolates character 'oll' by range of indexes
 [4:6]                 // Generate a value with only bits 4 to 6 is 1:  01110000
 0xfff $4              // Ensure value takes 4 bytes of space
 3 + (2$32) - 1        // This is equal to '4' but occupies 32 bytes. Size of bytes inherits though evaluation

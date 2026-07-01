@@ -258,12 +258,49 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
       }break;
       case SBRAC_O:{
         if(left_val && right_val){
-          hh_bigint_resize(result, 1);
-          uint64_t index = hh_bigint_get_uint64(right_val);
-          if(index < left_val->size){
-            result->data[0] = left_val->data[index];
-          }else{
-            result->data[0] = 0;
+          if(expr->right->token->id == COLON){
+            hh_bigint_t* min_index_bi = hh_bigint_new(0);
+            hh_bigint_t* max_index_bi = hh_bigint_new(0);
+            err = lasm2_evaluate_expression(assembly, expr->right->left, min_index_bi);
+            if(err) break;
+            err = lasm2_evaluate_expression(assembly, expr->right->right, max_index_bi);
+            if(err) break;
+            uint32_t max_index = hh_bigint_get_uint32(max_index_bi);
+            uint32_t min_index = hh_bigint_get_uint32(min_index_bi);
+            uint8_t reverse = 0;
+            if(min_index > max_index){
+              uint32_t temp = max_index;
+              max_index = min_index;
+              min_index = temp;
+              reverse = 1;
+            }
+            hh_bigint_resize(result, max_index - min_index + 1);
+            for(uint32_t i = min_index; i <= max_index; i++){
+              if(i < left_val->size){
+                if(reverse){
+                  result->data[(max_index - min_index) - (i - min_index)] = left_val->data[i];
+                }else{
+                  result->data[i - min_index] = left_val->data[i];
+                }
+              }else{
+                if(reverse){
+                  result->data[(max_index - min_index) - (i - min_index)] = 0;
+                }else{
+                  result->data[i - min_index] = 0;
+                }
+              }
+            }
+            hh_bigint_free(min_index_bi);
+            hh_bigint_free(max_index_bi);
+          }
+          else{
+            hh_bigint_resize(result, 1);
+            uint64_t index = hh_bigint_get_uint64(right_val);
+            if(index < left_val->size){
+              result->data[0] = left_val->data[index];
+            }else{
+              result->data[0] = 0;
+            }
           }
         }else if(!left_val && expr->right->token->id == COLON){
           // Bit range evaluation
