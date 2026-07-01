@@ -265,6 +265,38 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
           }else{
             result->data[0] = 0;
           }
+        }else if(!left_val && expr->right->token->id == COLON){
+          // Bit range evaluation
+          left_val = hh_bigint_new(0);
+          err = lasm2_evaluate_expression(assembly, expr->right->left, left_val);
+          if(err) break;
+          err = lasm2_evaluate_expression(assembly, expr->right->right, right_val);
+          if(err) break;
+          // get min max range 
+          uint32_t max_bit = hh_bigint_get_uint32(left_val);
+          uint32_t min_bit = hh_bigint_get_uint32(right_val);
+          if(min_bit > max_bit){
+            uint32_t temp = max_bit;
+            max_bit = min_bit;
+            min_bit = temp;
+          }
+          uint32_t max_bit_index = max_bit >> 3;
+          uint32_t min_bit_index = min_bit >> 3;
+          uint8_t max_bit_offset = max_bit & 0x07;
+          uint8_t min_bit_offset = min_bit & 0x07;
+          // generate
+          hh_bigint_set_int32(result, 0);
+          hh_bigint_resize(result, (max_bit>>3) + 1);
+          for(uint32_t i = min_bit_index; i <= max_bit_index; i++){
+            uint8_t byte = 0xff;
+            if(i == min_bit_index){
+              byte &= (0xFF << min_bit_offset);
+            }
+            if(i == max_bit_index){
+              byte &= (0xFF >> (7 - max_bit_offset));
+            }
+            result->data[i] = byte;
+          }
         }else{ err = -1; break; }
       }break;
       case BITSHIFT_L:{

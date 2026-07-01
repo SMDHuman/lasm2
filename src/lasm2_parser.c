@@ -45,9 +45,9 @@ static expr_node_t* parse_expression_right(token_reader_t* reader, float min_prc
   if(token_reader_EOF(reader)) return NULL;
   if(token_reader_peek(reader, 0)->id == NEWLINE){return NULL;}
   expr_node_t* new_expr = NEW(expr_node_t, 1);
-  new_expr->left = 0; 
-  new_expr->right = 0; 
-  new_expr->token = 0;
+  new_expr->left = NULL; 
+  new_expr->right = NULL; 
+  new_expr->token = NULL;
   if(token_reader_peek(reader, 0)->id == NUMBER || 
      token_reader_peek(reader, 0)->id == STRING_DB || 
      token_reader_peek(reader, 0)->id == STRING_SG || 
@@ -70,7 +70,11 @@ static expr_node_t* parse_expression_right(token_reader_t* reader, float min_prc
   if(token_reader_peek(reader, 0)->id == SBRAC_O){
     token_t* index_token = token_reader_next(reader, 1);
     expr_node_t* new_op_expr= NEW(expr_node_t, 1);
-    new_op_expr->left = new_expr;
+    if(new_expr->token == NULL){
+      new_op_expr->left = NULL;
+    }else{
+      new_op_expr->left = new_expr;
+    }
     new_op_expr->token = index_token;
     new_op_expr->right = NEW(expr_node_t, 1);
     parse_expression(reader, new_op_expr->right);
