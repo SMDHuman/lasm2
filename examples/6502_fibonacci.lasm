@@ -1,0 +1,47 @@
+// 6502 Fibonacci sequence example
+// Writes each Fibonacci value to one zero-page output byte.
+// Halts when the next value would overflow 8 bits (carry set).
+
+<#"6502.lasm"#>
+
+.zp[0x00::0x100]{
+	.out[0x10]
+	.a[0x11]
+	.b[0x12]
+	.sum[0x13]
+}
+
+.start[0x8000]{
+	// Initialize with F(0)=0 and F(1)=1
+	lda_imm 0
+	sta zp.a
+	sta zp.out
+
+	lda_imm 1
+	sta zp.b
+
+	.loop
+		lda zp.a
+		clc
+		adc zp.b
+		bcs done
+
+		sta zp.sum
+		sta zp.out
+
+		lda zp.b
+		sta zp.a
+		lda zp.sum
+		sta zp.b
+
+		jmp loop
+
+	.done
+		hlt
+}
+
+.vectors[0xfffa]{
+  start $2
+  start $2
+  start $2
+}

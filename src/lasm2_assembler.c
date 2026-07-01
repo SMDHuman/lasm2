@@ -498,7 +498,11 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
           }
         }else{
           print_error_loc(expr->token);
-          printf("Branch can't be reached or undefined.\n");
+          char* name = NEW(char, expr->token->text_size+1);
+          memcpy(name, expr->token->text, expr->token->text_size);
+          name[expr->token->text_size] = 0;
+          printf("Branch '%s' can't be reached or undefined.\n", name);
+          free(name);
           err = -1; break;
         }
       }break;
