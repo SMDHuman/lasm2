@@ -1,75 +1,454 @@
+// ADC - Add Memory to Accumulator with Carry 
+  <# ADC | adc         address; 
+                                $(address) == 1 ? 0x65 : _
+                                $(address) == 2 ? 0x6D : _
+                                address
+  #>
+  <# ADC_IMM | adc_imm byte   ; 0x69; (byte)$1#>
+  <# ADC_X | adc_x     address; 
+                                $(address) == 1 ? 0x75 : _
+                                $(address) == 2 ? 0x7D : _
+                                address
+  #>
+  <# ADC_Y | adc_y     address; 
+                                $(address) == 2 ? 0x79 : _
+                                (address)$2
+  #>
+  <# ADC_INX | adc_inx address; 
+                                $(address) == 1 ? 0x61 : _
+                                (address)$1
+  #>
+  <# ADC_INY | adc_iny address; 
+                                $(address) == 1 ? 0x71 : _
+                                (address)$1
+  #>
 
-<# IMM; 0#>
-<# ZP ; 1#>
-<# ZPX; 2#>
-<# AB ; 3#>
-<# ABX; 4#>
-<# ABY; 5#>
-<# INX; 6#>
-<# INY; 7#>
+// AND - AND Memory with Accumulator
+  <# AND | and         address; 
+                                $(address) == 1 ? 0x25 : _
+                                $(address) == 2 ? 0x2D : _
+                                address
+  #>
+  <# AND_IMM | and_imm byte   ; 0x29; (byte)$1#>
+  <# AND_X | and_x     address; 
+                                $(address) == 1 ? 0x35 : _
+                                $(address) == 2 ? 0x3D : _
+                                address
+  #>
+  <# AND_Y | and_y     address; 
+                                $(address) == 2 ? 0x39 : _
+                                (address)$2
+  #>
+  <# AND_INX | and_inx address; 
+                                $(address) == 1 ? 0x21 : _
+                                (address)$1
+  #>
+  <# AND_INY | and_iny address; 
+                                $(address) == 1 ? 0x31 : _
+                                (address)$1
+  #>  
 
-<# ADDR_MODE_IMM val; (val)$1#>
-<# ADDR_MODE_ZP  val; (val)$1#>
-<# ADDR_MODE_ZPX val; (val)$1#>
-<# ADDR_MODE_AB  val; (val)$2#>
-<# ADDR_MODE_ABX val; (val)$2#>
-<# ADDR_MODE_ABY val; (val)$2#>
-<# ADDR_MODE_INX val; (val)$1#>
-<# ADDR_MODE_INY val; (val)$1#>
+// ASL - Shift Left One Bit (Memory or Accumulator)
+  <# ASL | asl         address; 
+                                $(address) == 1 ? 0x06 : _
+                                $(address) == 2 ? 0x0E : _
+                                address
+  #>
+  <# ASL_ACC | asl_acc ; 0x0A#>
+  <# ASL_X | asl_x     address; 
+                                $(address) == 1 ? 0x16 : _
+                                $(address) == 2 ? 0x1E : _
+                                address
+  #>
 
-<# ADC | adc; #>
-<# AND | and; #>
-<# ASL | asl; #>
-<# BCC | bcc; #>
-<# BCS | bcs; #>
-<# BEQ | beq; #>
-<# BIT | bit; #>
-<# BMI | bmi; #>
-<# BNE | bne; #>
-<# BPL | bpl; #>
-<# BRK | brk; #>
-<# BVC | bvc; #>
-<# BVS | bvs; #>
-<# CLC | clc; #>
-<# CLD | cld; #>
-<# CLI | cli; #>
-<# CLV | clv; #>
-<# CMP | cmp; #>
-<# CPX | cpx; #>
-<# CPY | cpy; #>
-<# DEC | dec; #>
-<# DEX | dex; #>
-<# DEY | dey; #>
-<# EOR | eor; #>
-<# INC | inc; #>
-<# INX | inx; #>
-<# INY | iny; #>
-<# JMP | jmp; #>
-<# JSR | jsr; #>
-<# LDA | lda; #>
-<# LDX | ldx; #>
-<# LDY | ldy; #>
-<# LSR | lsr; #>
-<# NOP | nop; #>
-<# ORA | ora; #>
-<# PHA | pha; #>
-<# PHP | php; #>
-<# PLA | pla; #>
-<# PLP | plp; #>
-<# ROL | rol; #>
-<# ROR | ror; #>
-<# RTI | rti; #>
-<# RTS | rts; #>
-<# SBC | sbc; #>
-<# SEC | sec; #>
-<# SED | sed; #>
-<# SEI | sei; #>
-<# STA | sta; #>
-<# STX | stx; #>
-<# STY | sty; #>
-<# TAX | tax; #>
-<# TAY | tay; #>
-<# TSX | tsx; #>
-<# TXA | txa; #>
-<# TXS | txs; #>
-<# TYA | tya; #>
+// BCC - Branch on Carry Clear
+  <# BCC | bcc         address; 0x90; (address - (@c - 1))$1#>
+
+// BCS - Branch on Carry Set
+  <# BCS | bcs         address; 0xB0; (address - (@c - 1))$1#>
+
+// BEQ - Branch on Result Zero
+  <# BEQ | beq         address; 0xF0; (address - (@c - 1))$1#>
+
+// BIT - Test Bits in Memory with Accumulator
+  <# BIT | bit         address;
+                                $(address) == 1 ? 0x24 : _
+                                $(address) == 2 ? 0x2C : _
+                                address
+  #>
+
+// BMI - Branch on Result Minus
+  <# BMI | bmi         address; 0x30; (address - (@c - 1))$1#>
+
+// BNE - Branch on Result not Zero
+  <# BNE | bne         address; 0xD0; (address - (@c - 1))$1#>
+
+// BPL - Branch on Result Plus
+  <# BPL | bpl         address; 0x10; (address - (@c - 1))$1#>
+
+// BRK - Force Break
+  <# BRK | brk         ; 0x00#>
+
+// BVC - Branch on Overflow Clear
+  <# BVC | bvc         address; 0x50; (address - (@c - 1))$1#>
+
+// BVS - Branch on Overflow Set
+  <# BVS | bvs         address; 0x70; (address - (@c - 1))$1#>
+
+// CLC - Clear Carry Flag
+  <# CLC | clc         ; 0x18#>
+
+// CLD - Clear Decimal Mode
+  <# CLD | cld         ; 0xD8#>
+
+// CLI - Clear Interrupt Disable
+  <# CLI | cli         ; 0x58#>
+
+// CLV - Clear Overflow Flag
+  <# CLV | clv         ; 0xB8#>
+
+// CMP - Compare Memory with Accumulator
+  <# CMP | cmp         address;
+                                $(address) == 1 ? 0xC5 : _
+                                $(address) == 2 ? 0xCD : _
+                                address
+  #>
+  <# CMP_IMM | cmp_imm byte   ; 0xC9; (byte)$1#>
+  <# CMP_X | cmp_x     address;
+                                $(address) == 1 ? 0xD5 : _
+                                $(address) == 2 ? 0xDD : _
+                                address
+  #>
+  <# CMP_Y | cmp_y     address;
+                                $(address) == 2 ? 0xD9 : _
+                                (address)$2
+  #>
+  <# CMP_INX | cmp_inx address;
+                                $(address) == 1 ? 0xC1 : _
+                                (address)$1
+  #>
+  <# CMP_INY | cmp_iny address;
+                                $(address) == 1 ? 0xD1 : _
+                                (address)$1
+  #>
+
+// CPX - Compare Memory and Index X
+  <# CPX | cpx         address;
+                                $(address) == 1 ? 0xE4 : _
+                                $(address) == 2 ? 0xEC : _
+                                address
+  #>
+  <# CPX_IMM | cpx_imm byte   ; 0xE0; (byte)$1#>
+
+// CPY - Compare Memory and Index Y
+  <# CPY | cpy         address;
+                                $(address) == 1 ? 0xC4 : _
+                                $(address) == 2 ? 0xCC : _
+                                address
+  #>
+  <# CPY_IMM | cpy_imm byte   ; 0xC0; (byte)$1#>
+
+// DEC - Decrement Memory by One
+  <# DEC | dec         address;
+                                $(address) == 1 ? 0xC6 : _
+                                $(address) == 2 ? 0xCE : _
+                                address
+  #>
+  <# DEC_X | dec_x     address;
+                                $(address) == 1 ? 0xD6 : _
+                                $(address) == 2 ? 0xDE : _
+                                address
+  #>
+
+// DEX - Decrement Index X by One
+  <# DEX | dex         ; 0xCA#>
+
+// DEY - Decrement Index Y by One
+  <# DEY | dey         ; 0x88#>
+
+// EOR - Exclusive OR Memory with Accumulator
+  <# EOR | eor         address;
+                                $(address) == 1 ? 0x45 : _
+                                $(address) == 2 ? 0x4D : _
+                                address
+  #>
+  <# EOR_IMM | eor_imm byte   ; 0x49; (byte)$1#>
+  <# EOR_X | eor_x     address;
+                                $(address) == 1 ? 0x55 : _
+                                $(address) == 2 ? 0x5D : _
+                                address
+  #>
+  <# EOR_Y | eor_y     address;
+                                $(address) == 2 ? 0x59 : _
+                                (address)$2
+  #>
+  <# EOR_INX | eor_inx address;
+                                $(address) == 1 ? 0x41 : _
+                                (address)$1
+  #>
+  <# EOR_INY | eor_iny address;
+                                $(address) == 1 ? 0x51 : _
+                                (address)$1
+  #>
+
+// INC - Increment Memory by One
+  <# INC | inc         address;
+                                $(address) == 1 ? 0xE6 : _
+                                $(address) == 2 ? 0xEE : _
+                                address
+  #>
+  <# INC_X | inc_x     address;
+                                $(address) == 1 ? 0xF6 : _
+                                $(address) == 2 ? 0xFE : _
+                                address
+  #>
+
+// INX - Increment Index X by One
+  <# INX | inx         ; 0xE8#>
+
+// INY - Increment Index Y by One
+  <# INY | iny         ; 0xC8#>
+
+// JMP - Jump to New Location
+  <# JMP | jmp         address; 0x4C; (address)$2#>
+  <# JMP_IND | jmp_ind address; 0x6C; (address)$2#>
+
+// JSR - Jump to New Location Saving Return Address
+  <# JSR | jsr         address; 0x20; (address)$2#>
+
+// LDA - Load Accumulator with Memory
+  <# LDA | lda         address;
+                                $(address) == 1 ? 0xA5 : _
+                                $(address) == 2 ? 0xAD : _
+                                address
+  #>
+  <# LDA_IMM | lda_imm byte   ; 0xA9; (byte)$1#>
+  <# LDA_X | lda_x     address;
+                                $(address) == 1 ? 0xB5 : _
+                                $(address) == 2 ? 0xBD : _
+                                address
+  #>
+  <# LDA_Y | lda_y     address;
+                                $(address) == 2 ? 0xB9 : _
+                                (address)$2
+  #>
+  <# LDA_INX | lda_inx address;
+                                $(address) == 1 ? 0xA1 : _
+                                (address)$1
+  #>
+  <# LDA_INY | lda_iny address;
+                                $(address) == 1 ? 0xB1 : _
+                                (address)$1
+  #>
+
+// LDX - Load Index X with Memory
+  <# LDX | ldx         address;
+                                $(address) == 1 ? 0xA6 : _
+                                $(address) == 2 ? 0xAE : _
+                                address
+  #>
+  <# LDX_IMM | ldx_imm byte   ; 0xA2; (byte)$1#>
+  <# LDX_Y | ldx_y     address;
+                                $(address) == 1 ? 0xB6 : _
+                                $(address) == 2 ? 0xBE : _
+                                address
+  #>
+
+// LDY - Load Index Y with Memory
+  <# LDY | ldy         address;
+                                $(address) == 1 ? 0xA4 : _
+                                $(address) == 2 ? 0xAC : _
+                                address
+  #>
+  <# LDY_IMM | ldy_imm byte   ; 0xA0; (byte)$1#>
+  <# LDY_X | ldy_x     address;
+                                $(address) == 1 ? 0xB4 : _
+                                $(address) == 2 ? 0xBC : _
+                                address
+  #>
+
+// LSR - Shift One Bit Right (Memory or Accumulator)
+  <# LSR | lsr         address;
+                                $(address) == 1 ? 0x46 : _
+                                $(address) == 2 ? 0x4E : _
+                                address
+  #>
+  <# LSR_ACC | lsr_acc ; 0x4A#>
+  <# LSR_X | lsr_x     address;
+                                $(address) == 1 ? 0x56 : _
+                                $(address) == 2 ? 0x5E : _
+                                address
+  #>
+
+// NOP - No Operation
+  <# NOP | nop         ; 0xEA#>
+
+// ORA - OR Memory with Accumulator
+  <# ORA | ora         address;
+                                $(address) == 1 ? 0x05 : _
+                                $(address) == 2 ? 0x0D : _
+                                address
+  #>
+  <# ORA_IMM | ora_imm byte   ; 0x09; (byte)$1#>
+  <# ORA_X | ora_x     address;
+                                $(address) == 1 ? 0x15 : _
+                                $(address) == 2 ? 0x1D : _
+                                address
+  #>
+  <# ORA_Y | ora_y     address;
+                                $(address) == 2 ? 0x19 : _
+                                (address)$2
+  #>
+  <# ORA_INX | ora_inx address;
+                                $(address) == 1 ? 0x01 : _
+                                (address)$1
+  #>
+  <# ORA_INY | ora_iny address;
+                                $(address) == 1 ? 0x11 : _
+                                (address)$1
+  #>
+
+// PHA - Push Accumulator on Stack
+  <# PHA | pha         ; 0x48#>
+
+// PHP - Push Processor Status on Stack
+  <# PHP | php         ; 0x08#>
+
+// PLA - Pull Accumulator from Stack
+  <# PLA | pla         ; 0x68#>
+
+// PLP - Pull Processor Status from Stack
+  <# PLP | plp         ; 0x28#>
+
+// ROL - Rotate One Bit Left (Memory or Accumulator)
+  <# ROL | rol         address;
+                                $(address) == 1 ? 0x26 : _
+                                $(address) == 2 ? 0x2E : _
+                                address
+  #>
+  <# ROL_ACC | rol_acc ; 0x2A#>
+  <# ROL_X | rol_x     address;
+                                $(address) == 1 ? 0x36 : _
+                                $(address) == 2 ? 0x3E : _
+                                address
+  #>
+
+// ROR - Rotate One Bit Right (Memory or Accumulator)
+  <# ROR | ror         address;
+                                $(address) == 1 ? 0x66 : _
+                                $(address) == 2 ? 0x6E : _
+                                address
+  #>
+  <# ROR_ACC | ror_acc ; 0x6A#>
+  <# ROR_X | ror_x     address;
+                                $(address) == 1 ? 0x76 : _
+                                $(address) == 2 ? 0x7E : _
+                                address
+  #>
+
+// RTI - Return from Interrupt
+  <# RTI | rti         ; 0x40#>
+
+// RTS - Return from Subroutine
+  <# RTS | rts         ; 0x60#>
+
+// SBC - Subtract Memory from Accumulator with Borrow
+  <# SBC | sbc         address;
+                                $(address) == 1 ? 0xE5 : _
+                                $(address) == 2 ? 0xED : _
+                                address
+  #>
+  <# SBC_IMM | sbc_imm byte   ; 0xE9; (byte)$1#>
+  <# SBC_X | sbc_x     address;
+                                $(address) == 1 ? 0xF5 : _
+                                $(address) == 2 ? 0xFD : _
+                                address
+  #>
+  <# SBC_Y | sbc_y     address;
+                                $(address) == 2 ? 0xF9 : _
+                                (address)$2
+  #>
+  <# SBC_INX | sbc_inx address;
+                                $(address) == 1 ? 0xE1 : _
+                                (address)$1
+  #>
+  <# SBC_INY | sbc_iny address;
+                                $(address) == 1 ? 0xF1 : _
+                                (address)$1
+  #>
+
+// SEC - Set Carry Flag
+  <# SEC | sec         ; 0x38#>
+
+// SED - Set Decimal Flag
+  <# SED | sed         ; 0xF8#>
+
+// SEI - Set Interrupt Disable
+  <# SEI | sei         ; 0x78#>
+
+// STA - Store Accumulator in Memory
+  <# STA | sta         address;
+                                $(address) == 1 ? 0x85 : _
+                                $(address) == 2 ? 0x8D : _
+                                address
+  #>
+  <# STA_X | sta_x     address;
+                                $(address) == 1 ? 0x95 : _
+                                $(address) == 2 ? 0x9D : _
+                                address
+  #>
+  <# STA_Y | sta_y     address;
+                                $(address) == 2 ? 0x99 : _
+                                (address)$2
+  #>
+  <# STA_INX | sta_inx address;
+                                $(address) == 1 ? 0x81 : _
+                                (address)$1
+  #>
+  <# STA_INY | sta_iny address;
+                                $(address) == 1 ? 0x91 : _
+                                (address)$1
+  #>
+
+// STX - Store Index X in Memory
+  <# STX | stx         address;
+                                $(address) == 1 ? 0x86 : _
+                                $(address) == 2 ? 0x8E : _
+                                address
+  #>
+  <# STX_Y | stx_y     address;
+                                $(address) == 1 ? 0x96 : _
+                                (address)$1
+  #>
+
+// STY - Store Index Y in Memory
+  <# STY | sty         address;
+                                $(address) == 1 ? 0x84 : _
+                                $(address) == 2 ? 0x8C : _
+                                address
+  #>
+  <# STY_X | sty_x     address;
+                                $(address) == 1 ? 0x94 : _
+                                (address)$1
+  #>
+
+// TAX - Transfer Accumulator to Index X
+  <# TAX | tax         ; 0xAA#>
+
+// TAY - Transfer Accumulator to Index Y
+  <# TAY | tay         ; 0xA8#>
+
+// TSX - Transfer Stack Pointer to Index X
+  <# TSX | tsx         ; 0xBA#>
+
+// TXA - Transfer Index X to Accumulator
+  <# TXA | txa         ; 0x8A#>
+
+// TXS - Transfer Index X to Stack Pointer
+  <# TXS | txs         ; 0x9A#>
+
+// TYA - Transfer Index Y to Accumulator
+  <# TYA | tya         ; 0x98#>
+
+// HLT / KIL / JAM - Halt CPU (illegal opcode family)
+  <# HLT | hlt | KIL | kil | JAM | jam ; 0x02#>
