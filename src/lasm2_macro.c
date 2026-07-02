@@ -11,8 +11,8 @@
 #include <dirent.h>
 
 static int get_index_if_argument(token_t* token, macro_t* macro);
-static macro_t* find_macro_array_with_token(token_t* token, hh_darray_t* macros);
-static macro_t* find_macro_with_token(token_t* token, macro_t* macros);
+static macro_t* find_macro_array_with_token(token_t* token, hh_darray_t* macros, int arg_count);
+static macro_t* find_macro_with_token(token_t* token, macro_t* macros, int arg_count);
 
 //-----------------------------------------------------------------------------
 int lasm_parse_macro(token_t *tokens, macro_t **macro){
@@ -51,15 +51,6 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
           memcpy(m.names, token_reader_next(reader, 1), sizeof(token_t));
         }
         //==========================
-        // Check if its already defined, and replace it
-        for(size_t i = 0; i < m.name_count; i++){
-          macro_t* macro = find_macro_array_with_token(&m.names[i], macros_array);
-          if(macro != NULL){
-            hh_darray_remove_reference(macros_array, macro);
-            break;
-          }
-        }
-        //==========================
         // Parse arguments
         if(!token_reader_expect_either(reader, WORD, NEWLINE, 0)) return -1;
         if(token_reader_peek(reader, 0)->id == WORD){
@@ -83,6 +74,15 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
           m.args = local_args;
         }
         token_reader_next(reader, 1); // skip newline
+        //==========================
+        // Check if its already defined, and replace it
+        for(size_t i = 0; i < m.name_count; i++){
+          macro_t* macro = find_macro_array_with_token(&m.names[i], macros_array, m.args_size);
+          if(macro != NULL){
+            hh_darray_remove_reference(macros_array, macro);
+            break;
+          }
+        }
         //==========================
         // Parse content
         m.content = token_reader_peek(reader, 0);
@@ -126,7 +126,7 @@ int lasm_parse_macro(token_t *tokens, macro_t **macro){
         // Check if macro is defined or not
         uint8_t found = 0;
         for(size_t i = 0; i < m.name_count; i++){
-          macro_t* macro = find_macro_array_with_token(&m.names[i], macros_array);
+          macro_t* macro = find_macro_array_with_token(&m.names[i], macros_array, -1);
           if(macro != NULL){
             found = 1;
             break;
@@ -304,21 +304,21 @@ int lasm_regenerate_tokens_with_macros(token_t *tokens, macro_t *macros, token_t
     // Check for macro usage
     uint8_t found = 0;
     if(token_reader_peek(reader, 0)->id == WORD){
-      macro_t *found_macro = find_macro_with_token(token_reader_peek(reader, 0), macros);
-      if(found_macro != NULL){
-        found = 1;
-      }
+      macro_t *found_macro = find_macro_with_token(token_reader_peek(reader, 0), macros, -1);
+      if(found_macro != NULL) found = 1;
       if(found){
         size_t arg_count = token_reader_count_until(reader, COMMA, NEWLINE);
         if(token_reader_peek(reader, 1)->id != NEWLINE) arg_count += 1;
         if(token_reader_peek(reader, 1)->id == COMMA) arg_count = 0;
-        if(found_macro->args_size == 0) arg_count = 0;
         // Check if the argument counts are matching
-        if(found_macro->args_size != arg_count){
+        macro_t *arg_match_macro = find_macro_with_token(token_reader_peek(reader, 0), macros, arg_count);
+        if(arg_match_macro == NULL){
           print_error_loc(token_reader_peek(reader, 0));
-          printf("Expected %lu arguments for macro, but %lu given\n", found_macro->args_size, arg_count);
+          printf("Expected at least %lu arguments for macro, but %lu given\n", found_macro->args_size, arg_count);
           return -1;
         }
+        found_macro = arg_match_macro;
+        //...
         token_t* parent_token = (token_t*)malloc(sizeof(token_t));
         memcpy(parent_token, token_reader_peek(reader, 0), sizeof(token_t));
         token_reader_next(reader, 1); // Skip name
@@ -432,13 +432,14 @@ char* find_file_in_paths(char* file_name, char** paths){
 }
 
 //-----------------------------------------------------------------------------
-static macro_t* find_macro_with_token(token_t* token, macro_t* macros){
+static macro_t* find_macro_with_token(token_t* token, macro_t* macros, int arg_count){
   if(!token || !macros) return NULL;
   
   for(size_t i = 0; macros[i].names != 0; i++){
     for(size_t n = 0; n < macros[i].name_count; n++){
       if(macros[i].names[n].text_size == token->text_size && 
-         memcmp(macros[i].names[n].text, token->text, token->text_size) == 0){
+         memcmp(macros[i].names[n].text, token->text, token->text_size) == 0 &&
+         (macros[i].args_size == arg_count || arg_count == -1) ){
         return &macros[i];
       }
     }
@@ -446,14 +447,15 @@ static macro_t* find_macro_with_token(token_t* token, macro_t* macros){
   return NULL;
 }
 //-----------------------------------------------------------------------------
-static macro_t* find_macro_array_with_token(token_t* token, hh_darray_t* macros){
+static macro_t* find_macro_array_with_token(token_t* token, hh_darray_t* macros, int arg_count){
   if(!token || !macros) return NULL;
   
   for(size_t i = 0; i < hh_darray_get_item_fill(macros); i++){
     macro_t* macro = hh_darray_get_reference(macros, i);
     for(size_t n = 0; n < macro->name_count; n++){
       if(macro->names[n].text_size == token->text_size && 
-         memcmp(macro->names[n].text, token->text, token->text_size) == 0){
+         memcmp(macro->names[n].text, token->text, token->text_size) == 0 && 
+         (macro->args_size == arg_count || arg_count == -1)){
         return macro;
       }
     }

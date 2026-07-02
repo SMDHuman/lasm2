@@ -29,3 +29,17 @@ home "is";
 // ADC x, y;
 // LDA 3
 // TBA; TAB;
+
+<#multi_arg_test a;
+  "1"; a
+#>
+<#multi_arg_test a, b;
+  "2"; a; b
+#>
+<#multi_arg_test a, b, c;
+  "3"; a; b; c
+#>
+
+multi_arg_test "a"
+multi_arg_test "a", "b"
+multi_arg_test "a", "b", "c"
