@@ -30,6 +30,8 @@ typedef struct lines{
 
 typedef struct scope{
   branch_t* header;
+  expr_node_t* condition;
+  enum scope_type {SCOPE_NORMAL, SCOPE_IF, SCOPE_ELSE} type;
   struct scope* parent;
   lines_t* lines;
 }scope_t;

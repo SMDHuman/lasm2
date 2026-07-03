@@ -94,6 +94,16 @@ x = 5 + 3
   .stack[0x100]{ .start; .end[start+0x255] }
 }
 
+x = 3
+.text{
+  ? x > 0 {
+    "x bigger than 0"
+  }
+  ? x == 0 {
+    "x equal to 0"
+  }
+}
+
 .start[0x8000]{ sta zp.x }
 ```
 

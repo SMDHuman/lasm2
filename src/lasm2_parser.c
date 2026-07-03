@@ -132,6 +132,16 @@ static int parse_scope(token_reader_t* reader, scope_t* scope){
         if(res) return res;
       }
     }
+  }else if (token_reader_peek(reader, 0)->id == QUEST){
+    scope->header = NEW(branch_t, 1);
+    scope->header->start_address = NULL; 
+    scope->header->end_address = NULL;
+    scope->header->eval_flag = 0;
+    scope->header->name = token_reader_next(reader, 1);
+    scope->type = SCOPE_IF;
+    scope->condition = NEW(expr_node_t, 1);
+    int res = parse_expression(reader, scope->condition);
+    if(res) return res;
   }else{
     scope->header = NEW(branch_t, 1);
     scope->header->start_address = NULL; 
@@ -175,7 +185,9 @@ static int parse_line(token_reader_t* reader, lines_t* lines, scope_t* parent){
       return 0;
     }
     // Parse as scope
-    else if(token_reader_peek(reader, 0)->id == DOT || token_reader_peek(reader, 0)->id == CBRAC_O){
+    else if(token_reader_peek(reader, 0)->id == DOT || 
+            token_reader_peek(reader, 0)->id == CBRAC_O || 
+            token_reader_peek(reader, 0)->id == QUEST){
       scope_t* scope = NEW(scope_t, 1);
       scope->parent = parent;
       scope->lines = NULL;
@@ -280,6 +292,16 @@ void print_scope(scope_t* scope, int indent){
   
   for(int i = 0; i < indent; i++) printf("  ");
   printf("Scope: ");
+  printf("type=");
+  if(scope->type == SCOPE_NORMAL) printf("NORMAL");
+  else if(scope->type == SCOPE_IF) printf("IF");
+  else if(scope->type == SCOPE_ELSE) printf("ELSE");
+  printf(", ");
+  if(scope->condition != NULL){
+    printf("condition=");
+    print_expression(scope->condition, indent);
+    printf(", ");
+  }
   if(scope->header != NULL){
     printf("name=");
     if(scope->header->name != NULL){

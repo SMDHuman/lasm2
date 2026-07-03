@@ -5,7 +5,7 @@
 // functions return 255 on failure
 //-----------------------------------------------------------------------------
 // Author		: github.com/SMDHuman
-// Last Update	: 22.06.2026
+// Last Update	: 03.07.2026
 //-----------------------------------------------------------------------------
 #ifndef HH_BIGINT_H
 #define HH_BIGINT_H
@@ -52,6 +52,7 @@
 #define hbi_divide hh_bigint_divide
 #define hbi_modulo hh_bigint_modulo
 #define hbi_reverse_bits hh_bigint_reverse_bits
+#define hbi_is_zero hh_bigint_is_zero
 #endif
 //-----------------------------------------------------------------------------
 // Big integer structure
@@ -106,6 +107,7 @@ uint8_t hh_bigint_sign_normalize(hh_bigint_t *bigint);
 uint8_t hh_bigint_divide(const hh_bigint_t *a, const hh_bigint_t *b, hh_bigint_t *result);
 uint8_t hh_bigint_modulo(const hh_bigint_t *a, const hh_bigint_t *b, hh_bigint_t *result);
 uint8_t hh_bigint_reverse_bits(hh_bigint_t *bigint);
+uint8_t hh_bigint_is_zero(const hh_bigint_t *bigint);
 
 //-----------------------------------------------------------------------------
 #ifdef HH_BIGINT_IMPLEMENTATION
@@ -848,6 +850,14 @@ uint8_t hh_bigint_reverse_bits(hh_bigint_t *bigint){
         bigint->data[i] = ~bigint->data[i];
     }
     return 0;
+}
+
+//-----------------------------------------------------------------------------
+uint8_t hh_bigint_is_zero(const hh_bigint_t *bigint){
+    for(size_t i = 0; i < bigint->size; i++){
+        if(bigint->data[i] != 0) return 0;
+    }
+    return 1;
 }
 
 #endif // HH_BIGINT_IMPLEMENTATION

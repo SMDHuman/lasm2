@@ -122,6 +122,16 @@ int lasm2_assemble(assembly_t *assembly){
     if(current_line->type == SCOPE){
       //...
       scope_t* scope = current_line->line;
+      if(scope->type == SCOPE_IF){
+        hh_bigint_t* condition_value = hh_bigint_new(0);
+        int res = lasm2_evaluate_expression(assembly, scope->condition, condition_value);
+        printf("Condition value: "); hh_bigint_print_hex(condition_value); printf("\n");
+        if(res < 0) return res;
+        if(hh_bigint_is_zero(condition_value)){
+          current_line = current_line->next;
+          continue; // Skip this scope
+        }
+      }
       assembly_scope_t* found_asm_scope = NULL;
       for(size_t i = 0; i < assembly->current_scope->sub_scopes_size; i++){
         assembly_scope_t* asm_scope = assembly->current_scope->sub_scopes[i];
