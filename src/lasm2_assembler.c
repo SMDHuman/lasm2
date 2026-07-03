@@ -125,7 +125,6 @@ int lasm2_assemble(assembly_t *assembly){
       if(scope->type == SCOPE_IF){
         hh_bigint_t* condition_value = hh_bigint_new(0);
         int res = lasm2_evaluate_expression(assembly, scope->condition, condition_value);
-        printf("Condition value: "); hh_bigint_print_hex(condition_value); printf("\n");
         if(res < 0) return res;
         if(hh_bigint_is_zero(condition_value)){
           current_line = current_line->next;

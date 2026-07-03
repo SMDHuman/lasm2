@@ -112,7 +112,7 @@ int main(int argc, char *argv[]){
     goto exit_assembler;
   }
   printf("[INFO] Lines parsed\n");
-  print_line(assembler.lines, 1);
+  // print_line(assembler.lines, 1);
   
   // for (size_t i = 0; assembler.tokens[i].id != EOT; i++){
   //   print_single_token(&assembler.tokens[i]);
