@@ -42,7 +42,6 @@ typedef struct assembly{
 assembly_t* lasm2_assembly_new(lines_t* lines, assembly_config_t* config);
 int lasm2_assembly_free(assembly_t* assembly);
 void lasm2_assembly_scope_free(assembly_scope_t* scope);
-assembly_scope_t* lasm2_assembly_extract_scopes_and_assignments_tree(lines_t* lines);
 int lasm2_assemble(assembly_t *assembly);
 int lasm2_assemble_patches(assembly_t *assembly);
 int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint_t* result);

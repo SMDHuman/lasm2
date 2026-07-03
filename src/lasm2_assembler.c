@@ -9,12 +9,14 @@
 #define LASM2_UTILS_IMPLEMENTATION
 #include "utils.h"
 
+static assembly_scope_t* lasm2_assembly_extract_scopes_tree(lines_t* lines);
+
 //-----------------------------------------------------------------------------
 assembly_t* lasm2_assembly_new(lines_t* lines, assembly_config_t* config){
   assembly_t* new = NEW(assembly_t, 1);
   new->config = NEW(assembly_config_t, 1); 
   memcpy(new->config, config, sizeof(assembly_config_t));
-  new->root_scope = lasm2_assembly_extract_scopes_and_assignments_tree(lines);
+  new->root_scope = lasm2_assembly_extract_scopes_tree(lines);
   new->root_scope->header = NULL;
   new->root_scope->parent_scope = NULL;
   new->root_patch = NULL;
@@ -105,6 +107,18 @@ int lasm2_assemble(assembly_t *assembly){
       hh_bigint_free(value);
       if(res < 0) return res;
     }
+    if(current_line->type == ASSIGNMENT){
+      assign_t* assign = current_line->line;
+      assign_t* assign_found = find_assignment_with_token_in_scopes(assembly->current_scope, assign->name);
+      // Store assignment in current scope
+      if(assign_found){
+        assign_found->value = assign->value;
+      }else{
+        assembly->current_scope->assignments_size++;
+        assembly->current_scope->assignments = realloc(assembly->current_scope->assignments, assembly->current_scope->assignments_size * sizeof(assign_t*));
+        assembly->current_scope->assignments[assembly->current_scope->assignments_size - 1] = assign;
+      }
+    }
     if(current_line->type == SCOPE){
       //...
       scope_t* scope = current_line->line;
@@ -182,21 +196,16 @@ int lasm2_assemble_patches(assembly_t *assembly){
 }
 
 //-----------------------------------------------------------------------------
-assembly_scope_t* lasm2_assembly_extract_scopes_and_assignments_tree(lines_t* lines){
+static assembly_scope_t* lasm2_assembly_extract_scopes_tree(lines_t* lines){
   assembly_scope_t* assembly_scope = NEW(assembly_scope_t, 1);
   assembly_scope->root_line = lines;
   hh_darray_t sub_scopes_array; hh_darray_init(&sub_scopes_array, sizeof(assembly_scope_t*));
-  hh_darray_t sub_assign_array; hh_darray_init(&sub_assign_array, sizeof(assign_t*));
   lines_t* current_line = lines;
   while(!(current_line == NULL || current_line->type == EMPTY)){
     //...
-    if(current_line->type == ASSIGNMENT){
-      assign_t* assign = current_line->line;
-      hh_darray_append(&sub_assign_array, &assign);
-    }
     if(current_line->type == SCOPE){
       scope_t* scope = current_line->line;
-      assembly_scope_t* sub_scope = lasm2_assembly_extract_scopes_and_assignments_tree(scope->lines);
+      assembly_scope_t* sub_scope = lasm2_assembly_extract_scopes_tree(scope->lines);
       sub_scope->header = scope->header;
       sub_scope->parent_scope = assembly_scope;
       hh_darray_append(&sub_scopes_array, &sub_scope);
@@ -205,21 +214,13 @@ assembly_scope_t* lasm2_assembly_extract_scopes_and_assignments_tree(lines_t* li
   }
   // Deinitialize array 
   assembly_scope->sub_scopes_size = hh_darray_get_item_fill(&sub_scopes_array);
-  assembly_scope->assignments_size = hh_darray_get_item_fill(&sub_assign_array);
-  if(assembly_scope->assignments_size > 0){
-    assembly_scope->assignments = NEW(assign_t*, assembly_scope->assignments_size);
-  }else assembly_scope->assignments = NULL;
   if(assembly_scope->sub_scopes_size > 0){
     assembly_scope->sub_scopes = NEW(assembly_scope_t*, assembly_scope->sub_scopes_size);
   }else assembly_scope->sub_scopes = NULL;
   for(size_t i = 0; i < assembly_scope->sub_scopes_size; i++){
     hh_darray_get(&sub_scopes_array, i, &assembly_scope->sub_scopes[i]);
   }
-  for(size_t i = 0; i < assembly_scope->assignments_size; i++){
-    hh_darray_get(&sub_assign_array, i, &assembly_scope->assignments[i]);
-  }
   hh_darray_deinit(&sub_scopes_array);
-  hh_darray_deinit(&sub_assign_array);
   return assembly_scope;
 }
 
