@@ -14,6 +14,8 @@ typedef struct assembly_scope{
   struct assembly_scope* parent_scope;
   struct assembly_scope** sub_scopes;
   size_t sub_scopes_size;
+  assign_t** assignments;
+  size_t assignments_size;
 }assembly_scope_t;
 
 typedef struct assembly_patch{
@@ -40,12 +42,13 @@ typedef struct assembly{
 assembly_t* lasm2_assembly_new(lines_t* lines, assembly_config_t* config);
 int lasm2_assembly_free(assembly_t* assembly);
 void lasm2_assembly_scope_free(assembly_scope_t* scope);
-assembly_scope_t* lasm2_assembly_extract_scope_tree(lines_t* lines);
+assembly_scope_t* lasm2_assembly_extract_scopes_and_assignments_tree(lines_t* lines);
 int lasm2_assemble(assembly_t *assembly);
 int lasm2_assemble_patches(assembly_t *assembly);
 int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint_t* result);
 int evaluate_token(token_t* token, hh_bigint_t* result);
 branch_t* find_header_with_token_in_scopes(assembly_scope_t* assembly_scope, token_t* token);
+assign_t* find_assignment_with_token_in_scopes(assembly_scope_t* assembly_scope, token_t* token);
 
 void print_assembly_scope(assembly_scope_t* assembly_scope);
 void print_assembly_scope_indent(assembly_scope_t* assembly_scope, int indent);

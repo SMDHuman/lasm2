@@ -66,6 +66,10 @@ Everything that doesn't belong to instruction words will be parsed as an express
 [4:6]                 // Generate a value with only bits 4 to 6 is 1:  01110000
 0xfff $4              // Ensure value takes 4 bytes of space
 3 + (2$32) - 1        // This is equal to '4' but occupies 32 bytes. Size of bytes inherits though evaluation
+
+// Temporary expression assignments
+x = 5 + 3
+-x + 3
 ```
 
 ### Labels, Namespaces & Memory Management

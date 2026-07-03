@@ -439,7 +439,7 @@ static macro_t* find_macro_with_token(token_t* token, macro_t* macros, int arg_c
     for(size_t n = 0; n < macros[i].name_count; n++){
       if(macros[i].names[n].text_size == token->text_size && 
          memcmp(macros[i].names[n].text, token->text, token->text_size) == 0 &&
-         (macros[i].args_size == arg_count || arg_count == -1) ){
+         (macros[i].args_size == (size_t)arg_count || arg_count == -1) ){
         return &macros[i];
       }
     }
@@ -455,7 +455,7 @@ static macro_t* find_macro_array_with_token(token_t* token, hh_darray_t* macros,
     for(size_t n = 0; n < macro->name_count; n++){
       if(macro->names[n].text_size == token->text_size && 
          memcmp(macro->names[n].text, token->text, token->text_size) == 0 && 
-         (macro->args_size == arg_count || arg_count == -1)){
+         (macro->args_size == (size_t)arg_count || arg_count == -1)){
         return macro;
       }
     }

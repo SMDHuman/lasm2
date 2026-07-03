@@ -190,6 +190,22 @@ static int parse_line(token_reader_t* reader, lines_t* lines, scope_t* parent){
       current_line->next = 0;
       current_line->line = 0;
     }
+    // Parse as assignment
+    else if(token_reader_peek(reader, 0)->id == WORD && token_reader_peek(reader, 1)->id == ASSIGN){
+      assign_t* assign = NEW(assign_t, 1);
+      assign->name = token_reader_next(reader, 1); // skip name
+      assign->value = NEW(expr_node_t, 1);
+      token_reader_next(reader, 1); // skip '='
+      int res = parse_expression(reader, assign->value);
+      if(res) return res;
+      current_line->type = ASSIGNMENT;
+      current_line->line = assign;
+      current_line->next = NEW(lines_t, 1);
+      current_line = current_line->next;
+      current_line->type = EMPTY;
+      current_line->next = 0;
+      current_line->line = 0;
+    }
     // Parse as expression
     else{
       expr_node_t* expr = NEW(expr_node_t, 1);
@@ -318,6 +334,18 @@ void print_line(lines_t* lines, int indent){
     print_scope((scope_t*)lines->line, indent + 1);
     for(int i = 0; i < indent; i++) printf("  ");
     printf("End SCOPE\n");
+  } else if(lines->type == ASSIGNMENT){
+    printf("ASSIGNMENT:  ");
+    assign_t* assign = (assign_t*)lines->line;
+    if(assign->name != NULL){
+        char text[assign->name->text_size + 1];
+        memcpy(text, assign->name->text, assign->name->text_size);
+        text[assign->name->text_size] = 0;
+        printf(" %s ", text);
+    }
+    printf("= ");
+    print_expression(assign->value, indent);
+    printf("\n");
   } else {
     printf("UNKNOWN TYPE\n");
   }

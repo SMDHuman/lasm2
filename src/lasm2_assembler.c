@@ -14,7 +14,7 @@ assembly_t* lasm2_assembly_new(lines_t* lines, assembly_config_t* config){
   assembly_t* new = NEW(assembly_t, 1);
   new->config = NEW(assembly_config_t, 1); 
   memcpy(new->config, config, sizeof(assembly_config_t));
-  new->root_scope = lasm2_assembly_extract_scope_tree(lines);
+  new->root_scope = lasm2_assembly_extract_scopes_and_assignments_tree(lines);
   new->root_scope->header = NULL;
   new->root_scope->parent_scope = NULL;
   new->root_patch = NULL;
@@ -38,6 +38,11 @@ void lasm2_assembly_scope_free(assembly_scope_t* scope){
     free(scope->sub_scopes);
   }
   
+  // Free the assignments array
+  if(scope->assignments != NULL){
+    free(scope->assignments);
+  }
+
   // Free the scope itself
   free(scope);
 }
@@ -95,10 +100,6 @@ int lasm2_assemble(assembly_t *assembly){
         }
       }
       hh_bigint_sign_normalize(value);
-      // if(value->sign){
-      //   hh_bigint_reverse_bits(value);
-      //   hh_bigint_add_int32(value, -1);
-      // }
       fwrite(value->data, 1, value->size, assembly->config->out_file);
       // hh_bigint_print_hex(value);
       hh_bigint_free(value);
@@ -181,16 +182,21 @@ int lasm2_assemble_patches(assembly_t *assembly){
 }
 
 //-----------------------------------------------------------------------------
-assembly_scope_t* lasm2_assembly_extract_scope_tree(lines_t* lines){
+assembly_scope_t* lasm2_assembly_extract_scopes_and_assignments_tree(lines_t* lines){
   assembly_scope_t* assembly_scope = NEW(assembly_scope_t, 1);
   assembly_scope->root_line = lines;
   hh_darray_t sub_scopes_array; hh_darray_init(&sub_scopes_array, sizeof(assembly_scope_t*));
+  hh_darray_t sub_assign_array; hh_darray_init(&sub_assign_array, sizeof(assign_t*));
   lines_t* current_line = lines;
   while(!(current_line == NULL || current_line->type == EMPTY)){
     //...
+    if(current_line->type == ASSIGNMENT){
+      assign_t* assign = current_line->line;
+      hh_darray_append(&sub_assign_array, &assign);
+    }
     if(current_line->type == SCOPE){
       scope_t* scope = current_line->line;
-      assembly_scope_t* sub_scope = lasm2_assembly_extract_scope_tree(scope->lines);
+      assembly_scope_t* sub_scope = lasm2_assembly_extract_scopes_and_assignments_tree(scope->lines);
       sub_scope->header = scope->header;
       sub_scope->parent_scope = assembly_scope;
       hh_darray_append(&sub_scopes_array, &sub_scope);
@@ -199,13 +205,21 @@ assembly_scope_t* lasm2_assembly_extract_scope_tree(lines_t* lines){
   }
   // Deinitialize array 
   assembly_scope->sub_scopes_size = hh_darray_get_item_fill(&sub_scopes_array);
+  assembly_scope->assignments_size = hh_darray_get_item_fill(&sub_assign_array);
+  if(assembly_scope->assignments_size > 0){
+    assembly_scope->assignments = NEW(assign_t*, assembly_scope->assignments_size);
+  }else assembly_scope->assignments = NULL;
   if(assembly_scope->sub_scopes_size > 0){
     assembly_scope->sub_scopes = NEW(assembly_scope_t*, assembly_scope->sub_scopes_size);
   }else assembly_scope->sub_scopes = NULL;
   for(size_t i = 0; i < assembly_scope->sub_scopes_size; i++){
     hh_darray_get(&sub_scopes_array, i, &assembly_scope->sub_scopes[i]);
   }
+  for(size_t i = 0; i < assembly_scope->assignments_size; i++){
+    hh_darray_get(&sub_assign_array, i, &assembly_scope->assignments[i]);
+  }
   hh_darray_deinit(&sub_scopes_array);
+  hh_darray_deinit(&sub_assign_array);
   return assembly_scope;
 }
 
@@ -487,6 +501,7 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
           break;
         }
         branch_t* branch = find_header_with_token_in_scopes(assembly->current_scope, expr->token);
+        assign_t* assign = find_assignment_with_token_in_scopes(assembly->current_scope, expr->token);
         if(branch){
           if(branch->eval_flag){
             hh_bigint_set_uint64(result, branch->location);
@@ -496,12 +511,14 @@ int lasm2_evaluate_expression(assembly_t *assembly, expr_node_t* expr, hh_bigint
             hh_bigint_resize(result, assembly->config->branch_default_size);
             err = 1; break;
           }
+        }else if (assign){
+          err = lasm2_evaluate_expression(assembly, assign->value, result);
         }else{
           print_error_loc(expr->token);
           char* name = NEW(char, expr->token->text_size+1);
           memcpy(name, expr->token->text, expr->token->text_size);
           name[expr->token->text_size] = 0;
-          printf("Branch '%s' can't be reached or undefined.\n", name);
+          printf("Branch or assignment '%s' can't be reached or undefined.\n", name);
           free(name);
           err = -1; break;
         }
@@ -559,6 +576,42 @@ branch_t* find_header_with_token_in_scopes(assembly_scope_t* assembly_scope, tok
   }
   free(name);
   return found_header;
+}
+//-----------------------------------------------------------------------------
+assign_t* find_assignment_with_token_in_scopes(assembly_scope_t* assembly_scope, token_t* token){
+  //...
+  char* name = NEW(char, token->text_size+1);
+  char* leading_name = NULL;
+  memcpy(name, token->text, token->text_size);
+  if(str_chr_count(name, '.')){
+    leading_name = str_first_chr(name, '.') + 1;
+    *(leading_name-1) = '\0';
+  }
+  //...
+  assign_t* found_assignment = NULL;
+  for(size_t i = 0; i < assembly_scope->assignments_size; i++){
+    assign_t* assignment = assembly_scope->assignments[i];
+    if(strlen(name) == assignment->name->text_size && 
+       memcmp(name, assignment->name->text, assignment->name->text_size) == 0){
+      if(leading_name){
+        token_t* temp_token = NEW(token_t, 1);
+        memcpy(temp_token, token, sizeof(token_t));
+        temp_token->text = leading_name;
+        temp_token->text_size = strlen(leading_name);
+        found_assignment = find_assignment_with_token_in_scopes(assembly_scope, temp_token);
+        free(temp_token);
+      }else{
+        found_assignment = assignment;
+      }
+      break;
+    }
+  }
+  //...
+  if(found_assignment == NULL && assembly_scope->parent_scope){
+    found_assignment = find_assignment_with_token_in_scopes(assembly_scope->parent_scope, token);
+  }
+  free(name);
+  return found_assignment;
 }
 
 //-----------------------------------------------------------------------------

@@ -62,6 +62,13 @@
       }
     },
     {
+      "scope": "keyword.operator.assignment",
+      "settings": {
+        "foreground": "#d19a66",
+        "fontStyle": "bold"
+      }
+    },
+    {
       "scope": "keyword.operator.macro-conditional",
       "settings": {
         "foreground": "#f44747",
@@ -279,6 +286,10 @@
         {
           "name": "keyword.operator.comparison.lasm2",
           "match": "(==|!=|<=|>=|=>|<|>)"
+        },
+        {
+          "name": "keyword.operator.assignment.lasm2",
+          "match": "(?<![!<>=])=(?![=>])"
         },
         {
           "name": "keyword.operator.arithmetic.lasm2",

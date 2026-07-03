@@ -1,12 +1,11 @@
 # Source directories
 SRC_DIR := src
-CPU_DIR := src/hardware
 BUILD_DIR := build
 INSTALL_DIR := /usr/local/bin
 
 # Compiler and flags
-CC := cc
-CFLAGS := -ggdb -Wall -Wextra -I include -I $(CPU_DIR) -I $(SRC_DIR)
+CC := gcc
+CFLAGS := -ggdb -Wall -Wextra -I include -I $(SRC_DIR)
 
 # Object files
 OBJECTS := $(BUILD_DIR)/lasm2_tokenizer.o \
@@ -16,7 +15,7 @@ OBJECTS := $(BUILD_DIR)/lasm2_tokenizer.o \
 			 $(BUILD_DIR)/lasm2_assembler.o
 
 # Main target
-$(BUILD_DIR)/lasm2: $(BUILD_DIR) $(wildcard $(SRC_DIR)/*) $(wildcard $(CPU_DIR)/*) $(OBJECTS)
+$(BUILD_DIR)/lasm2: $(BUILD_DIR) $(wildcard $(SRC_DIR)/*) $(OBJECTS)
 	$(CC) -o $@  $(SRC_DIR)/lasm2.c $(CFLAGS) $(OBJECTS)
 
 # Generic rule for object files

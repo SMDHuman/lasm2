@@ -23,7 +23,7 @@ typedef struct{
 }branch_t;
 
 typedef struct lines{
-  enum line_type {EMPTY, EXPR, SCOPE} type;
+  enum line_type {EMPTY, EXPR, SCOPE, ASSIGNMENT} type;
   void* line;
   struct lines* next; 
 }lines_t;
@@ -33,6 +33,12 @@ typedef struct scope{
   struct scope* parent;
   lines_t* lines;
 }scope_t;
+
+typedef struct{
+  token_t* name;
+  expr_node_t* value;
+}assign_t;
+
 
 int lasm2_parser(token_t* tokens, lines_t* lines);
 void print_expression(expr_node_t* expr, int indent);
